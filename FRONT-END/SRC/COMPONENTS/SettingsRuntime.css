@@ -1,0 +1,25 @@
+html[data-compact="true"] .dashboard-content {
+  padding: 10px;
+}
+
+html[data-compact="true"] .dashboard-grid,
+html[data-compact="true"] .dashboard-column {
+  gap: 12px;
+}
+
+html[data-compact="true"] .dashboard-card,
+html[data-compact="true"] .analytics-card,
+html[data-compact="true"] .upload-card,
+html[data-compact="true"] .editor-card {
+  border-radius: 14px !important;
+}
+
+html[data-compact="true"] .dashboard-card,
+html[data-compact="true"] .analytics-card,
+html[data-compact="true"] .upload-card {
+  padding: 14px !important;
+}
+
+html[data-compact="true"] .dashboard-header {
+  margin-bottom: 8px;
+}

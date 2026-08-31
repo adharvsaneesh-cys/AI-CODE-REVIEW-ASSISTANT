@@ -21,7 +21,23 @@ const issueSchema = new mongoose.Schema(
 
     severity: {
       type: String,
-      enum: ["critical", "high", "medium", "low", "info"],
+      enum: [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info",
+      ],
+      default: "medium",
+    },
+
+    confidence: {
+      type: String,
+      enum: [
+        "high",
+        "medium",
+        "low",
+      ],
       default: "medium",
     },
 
@@ -35,6 +51,99 @@ const issueSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+
+    owasp: {
+      id: {
+        type: String,
+        default: "Not applicable",
+      },
+
+      category: {
+        type: String,
+        default: "Not applicable",
+      },
+    },
+
+    cwe: {
+      type: String,
+      default: "Not applicable",
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+const aiFindingSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      default: "",
+    },
+
+    severity: {
+      type: String,
+      enum: [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info",
+      ],
+      default: "info",
+    },
+
+    confidence: {
+      type: String,
+      enum: [
+        "high",
+        "medium",
+        "low",
+      ],
+      default: "medium",
+    },
+
+    line: {
+      type: Number,
+      default: 1,
+    },
+
+    explanation: {
+      type: String,
+      default: "",
+    },
+
+    impact: {
+      type: String,
+      default: "",
+    },
+
+    recommendation: {
+      type: String,
+      default: "",
+    },
+
+    secureExample: {
+      type: String,
+      default: "",
+    },
+
+    owasp: {
+      id: {
+        type: String,
+        default: "Not applicable",
+      },
+
+      category: {
+        type: String,
+        default: "Not applicable",
+      },
+    },
+
+    cwe: {
+      type: String,
+      default: "Not applicable",
     },
   },
   {
@@ -60,7 +169,12 @@ const scanSchema = new mongoose.Schema(
 
     sourceType: {
       type: String,
-      enum: ["paste", "file", "zip", "repository"],
+      enum: [
+        "paste",
+        "file",
+        "zip",
+        "repository",
+      ],
       default: "paste",
     },
 
@@ -85,7 +199,12 @@ const scanSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["queued", "processing", "completed", "failed"],
+      enum: [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+      ],
       default: "queued",
     },
 
@@ -97,16 +216,85 @@ const scanSchema = new mongoose.Schema(
     },
 
     issueCount: {
-      critical: { type: Number, default: 0 },
-      high: { type: Number, default: 0 },
-      medium: { type: Number, default: 0 },
-      low: { type: Number, default: 0 },
-      info: { type: Number, default: 0 },
+      critical: {
+        type: Number,
+        default: 0,
+      },
+
+      high: {
+        type: Number,
+        default: 0,
+      },
+
+      medium: {
+        type: Number,
+        default: 0,
+      },
+
+      low: {
+        type: Number,
+        default: 0,
+      },
+
+      info: {
+        type: Number,
+        default: 0,
+      },
     },
 
     issues: {
       type: [issueSchema],
       default: [],
+    },
+
+    aiReview: {
+      available: {
+        type: Boolean,
+        default: false,
+      },
+
+      summary: {
+        type: String,
+        default: "",
+      },
+
+      riskLevel: {
+        type: String,
+        enum: [
+          "critical",
+          "high",
+          "medium",
+          "low",
+          "safe",
+          "unknown",
+        ],
+        default: "unknown",
+      },
+
+      priorityActions: {
+        type: [String],
+        default: [],
+      },
+
+      detailedFindings: {
+        type: [aiFindingSchema],
+        default: [],
+      },
+
+      codeQualitySuggestions: {
+        type: [String],
+        default: [],
+      },
+
+      finalChecklist: {
+        type: [String],
+        default: [],
+      },
+
+      error: {
+        type: String,
+        default: null,
+      },
     },
 
     errorMessage: {
@@ -130,9 +318,21 @@ const scanSchema = new mongoose.Schema(
   },
 );
 
-scanSchema.index({ owner: 1, createdAt: -1 });
-scanSchema.index({ project: 1, createdAt: -1 });
+scanSchema.index({
+  owner: 1,
+  createdAt: -1,
+});
 
-const Scan = mongoose.model("Scan", scanSchema);
+scanSchema.index({
+  project: 1,
+  createdAt: -1,
+});
+
+const Scan =
+  mongoose.models.Scan ||
+  mongoose.model(
+    "Scan",
+    scanSchema,
+  );
 
 module.exports = Scan;

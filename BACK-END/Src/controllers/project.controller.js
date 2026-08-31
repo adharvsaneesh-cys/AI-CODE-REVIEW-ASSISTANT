@@ -1,128 +1,249 @@
 const Project = require("../models/Project");
+const Scan = require("../models/Scan");
 
-const createProject = async (request, response) => {
-  const project = await Project.create({
-    ...request.body,
-    owner: request.user._id,
-  });
+const createProject = async (
+  request,
+  response,
+) => {
+  const project =
+    await Project.create({
+      ...request.body,
 
-  return response.status(201).json({
-    success: true,
-    message: "Project created successfully",
-    project,
-  });
+      owner:
+        request.user._id,
+    });
+
+  return response
+    .status(201)
+    .json({
+      success: true,
+
+      message:
+        "Project created successfully",
+
+      project,
+    });
 };
 
-const listProjects = async (request, response) => {
-  const page = Math.max(Number(request.query.page) || 1, 1);
+const listProjects = async (
+  request,
+  response,
+) => {
+  const page = Math.max(
+    Number(
+      request.query.page,
+    ) || 1,
+    1,
+  );
+
   const limit = Math.min(
-    Math.max(Number(request.query.limit) || 10, 1),
+    Math.max(
+      Number(
+        request.query.limit,
+      ) || 10,
+      1,
+    ),
+
     50,
   );
 
-  const skip = (page - 1) * limit;
+  const skip =
+    (page - 1) *
+    limit;
 
   const filter = {
-    owner: request.user._id,
+    owner:
+      request.user._id,
   };
 
-  if (request.query.status) {
-    filter.status = request.query.status;
+  if (
+    request.query.status
+  ) {
+    filter.status =
+      request.query.status;
   }
 
-  if (request.query.search) {
+  if (
+    request.query.search
+  ) {
     filter.name = {
-      $regex: request.query.search.trim(),
+      $regex:
+        request.query.search.trim(),
+
       $options: "i",
     };
   }
 
-  const [projects, total] = await Promise.all([
+  const [
+    projects,
+    total,
+  ] = await Promise.all([
     Project.find(filter)
-      .sort({ createdAt: -1 })
+      .sort({
+        createdAt: -1,
+      })
       .skip(skip)
       .limit(limit),
 
-    Project.countDocuments(filter),
+    Project.countDocuments(
+      filter,
+    ),
   ]);
 
-  return response.status(200).json({
-    success: true,
-    projects,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
+  return response
+    .status(200)
+    .json({
+      success: true,
+
+      projects,
+
+      pagination: {
+        page,
+        limit,
+        total,
+
+        totalPages:
+          Math.ceil(
+            total / limit,
+          ),
+      },
+    });
 };
 
-const getProject = async (request, response) => {
-  const project = await Project.findOne({
-    _id: request.params.projectId,
-    owner: request.user._id,
-  });
+const getProject = async (
+  request,
+  response,
+) => {
+  const project =
+    await Project.findOne({
+      _id:
+        request.params.projectId,
+
+      owner:
+        request.user._id,
+    });
 
   if (!project) {
-    return response.status(404).json({
-      success: false,
-      message: "Project not found",
-    });
+    return response
+      .status(404)
+      .json({
+        success: false,
+
+        message:
+          "Project not found",
+      });
   }
 
-  return response.status(200).json({
-    success: true,
-    project,
-  });
+  return response
+    .status(200)
+    .json({
+      success: true,
+      project,
+    });
 };
 
-const updateProject = async (request, response) => {
-  const project = await Project.findOneAndUpdate(
-    {
-      _id: request.params.projectId,
-      owner: request.user._id,
-    },
-    {
-      $set: request.body,
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
+const updateProject = async (
+  request,
+  response,
+) => {
+  const project =
+    await Project.findOneAndUpdate(
+      {
+        _id:
+          request.params.projectId,
+
+        owner:
+          request.user._id,
+      },
+
+      {
+        $set:
+          request.body,
+      },
+
+      {
+        new: true,
+
+        runValidators:
+          true,
+      },
+    );
 
   if (!project) {
-    return response.status(404).json({
-      success: false,
-      message: "Project not found",
-    });
+    return response
+      .status(404)
+      .json({
+        success: false,
+
+        message:
+          "Project not found",
+      });
   }
 
-  return response.status(200).json({
-    success: true,
-    message: "Project updated successfully",
-    project,
-  });
+  return response
+    .status(200)
+    .json({
+      success: true,
+
+      message:
+        "Project updated successfully",
+
+      project,
+    });
 };
 
-const deleteProject = async (request, response) => {
-  const project = await Project.findOneAndDelete({
-    _id: request.params.projectId,
-    owner: request.user._id,
-  });
+const deleteProject = async (
+  request,
+  response,
+) => {
+  const project =
+    await Project.findOne({
+      _id:
+        request.params.projectId,
+
+      owner:
+        request.user._id,
+    });
 
   if (!project) {
-    return response.status(404).json({
-      success: false,
-      message: "Project not found",
-    });
+    return response
+      .status(404)
+      .json({
+        success: false,
+
+        message:
+          "Project not found",
+      });
   }
 
-  return response.status(200).json({
-    success: true,
-    message: "Project deleted successfully",
+  const scanResult =
+    await Scan.deleteMany({
+      project:
+        project._id,
+
+      owner:
+        request.user._id,
+    });
+
+  await Project.deleteOne({
+    _id:
+      project._id,
+
+    owner:
+      request.user._id,
   });
+
+  return response
+    .status(200)
+    .json({
+      success: true,
+
+      message:
+        "Project and associated scans deleted successfully",
+
+      deletedScans:
+        scanResult.deletedCount,
+    });
 };
 
 module.exports = {

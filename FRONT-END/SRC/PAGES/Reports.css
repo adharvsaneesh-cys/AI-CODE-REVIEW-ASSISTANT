@@ -1,0 +1,534 @@
+.reports-page {
+  width: 100%;
+  padding: 28px;
+  box-sizing: border-box;
+  color: #f8fafc;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.reports-header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.reports-header p {
+  color: #94a3b8;
+  margin-top: 7px;
+}
+
+.report-risk {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.report-risk.low,
+.report-risk.safe {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.report-risk.medium {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.report-risk.high,
+.report-risk.critical {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.report-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    4,
+    minmax(0, 1fr)
+  );
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.report-stat-card {
+  background: #111827;
+  border: 1px solid #26334a;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.report-stat-card span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.report-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 22px;
+}
+
+.report-section {
+  background: #111827;
+  border: 1px solid #26334a;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 22px;
+}
+
+.report-section h2 {
+  margin: 0 0 18px;
+  font-size: 21px;
+}
+
+.severity-report-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    4,
+    minmax(0, 1fr)
+  );
+  gap: 12px;
+}
+
+.severity-card {
+  min-height: 105px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.severity-card strong {
+  font-size: 30px;
+}
+
+.severity-card.critical {
+  color: #fecaca;
+  background: rgba(220, 38, 38, 0.16);
+}
+
+.severity-card.high {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.severity-card.medium {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.severity-card.low {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.report-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-finding-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid
+    rgba(148, 163, 184, 0.14);
+  border-radius: 13px;
+  padding: 16px;
+}
+
+.report-finding-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-finding-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.report-finding-header span {
+  color: #60a5fa;
+  font-size: 12px;
+}
+
+.report-severity {
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  height: fit-content;
+  font-weight: 800;
+}
+
+.report-severity.critical,
+.report-severity.high {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.report-severity.medium {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.report-severity.low,
+.report-severity.info {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.report-finding-card p {
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.report-fix {
+  margin-top: 12px;
+}
+
+.report-fix strong {
+  color: #a7f3d0;
+}
+
+.report-safe-state {
+  color: #86efac;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.report-ai-summary,
+.report-ai-block {
+  margin-top: 16px;
+}
+
+.report-ai-summary p,
+.report-ai-block li,
+.report-ai-finding p {
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.report-ai-finding {
+  margin-top: 12px;
+  padding: 15px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid
+    rgba(148, 163, 184, 0.14);
+}
+
+.report-ai-finding-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-ai-finding-top span {
+  font-size: 10px;
+  color: #fca5a5;
+}
+
+.report-ai-fix {
+  color: #a7f3d0 !important;
+}
+
+.report-reference-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.report-reference-row span {
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+}
+
+.reports-empty {
+  background: #111827;
+  border: 1px solid #26334a;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+}
+
+.report-capture-area {
+  width: 100%;
+  background: #0b1220;
+  box-sizing: border-box;
+}
+
+@media (max-width: 950px) {
+  .report-overview-grid,
+  .severity-report-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+}
+
+@media (max-width: 600px) {
+  .report-overview-grid,
+  .severity-report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-header {
+    flex-direction: column;
+  }
+}
+
+.reports-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
+.download-report-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #7c3aed
+  );
+
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.download-report-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(59, 130, 246, 0.25);
+}
+
+.download-report-btn:active {
+  transform: translateY(0);
+}
+
+
+.report-capture-area.pdf-export-mode {
+  width: 800px !important;
+  max-width: 800px !important;
+  min-width: 800px !important;
+
+  padding: 28px !important;
+  margin: 0 !important;
+
+  background: #0b1220 !important;
+  box-sizing: border-box !important;
+}
+
+/* =========================================
+   REPORT PAGE LIGHT MODE - LAYOUT FIX
+   KEEP AT ABSOLUTE BOTTOM OF Reports.css
+   ========================================= */
+
+html[data-theme="light"] .reports-page {
+  background: #f4f7fb !important;
+  color: #0f172a !important;
+  min-height: 100vh !important;
+  padding: 24px !important;
+}
+
+html[data-theme="light"] .report-capture-area {
+  background: #f4f7fb !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+}
+
+/* HEADER */
+
+html[data-theme="light"] .reports-header {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbe3ee !important;
+  border-radius: 16px !important;
+  padding: 22px !important;
+  margin-bottom: 18px !important;
+}
+
+html[data-theme="light"] .reports-header h1 {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .reports-header p {
+  color: #64748b !important;
+}
+
+/* OVERVIEW GRID */
+
+html[data-theme="light"] .report-overview-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+
+  background: transparent !important;
+
+  margin-bottom: 18px !important;
+}
+
+html[data-theme="light"] .report-stat-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbe3ee !important;
+  border-radius: 14px !important;
+  padding: 18px !important;
+  min-height: 92px !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+}
+
+html[data-theme="light"] .report-stat-card span {
+  color: #64748b !important;
+}
+
+html[data-theme="light"] .report-stat-card strong {
+  color: #0f172a !important;
+}
+
+/* MAIN REPORT SECTIONS */
+
+html[data-theme="light"] .report-section,
+html[data-theme="light"] .severity-summary,
+html[data-theme="light"] .report-analytics,
+html[data-theme="light"] .security-analytics,
+html[data-theme="light"] .detected-vulnerabilities,
+html[data-theme="light"] .vulnerabilities-section,
+html[data-theme="light"] .ai-review-section {
+  background: #ffffff !important;
+  color: #0f172a !important;
+
+  border: 1px solid #dbe3ee !important;
+  border-radius: 16px !important;
+
+  padding: 20px !important;
+
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* FIX DARK / EMPTY BACKGROUND AROUND REPORT */
+
+html[data-theme="light"] .reports-page > div,
+html[data-theme="light"] .report-capture-area > div {
+  background-color: transparent;
+}
+
+/* SEVERITY + ANALYTICS ROW */
+
+html[data-theme="light"] .report-summary-grid,
+html[data-theme="light"] .report-middle-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 18px !important;
+  background: transparent !important;
+  margin-bottom: 18px !important;
+}
+
+/* VULNERABILITIES */
+
+html[data-theme="light"] .vulnerability-card,
+html[data-theme="light"] .vulnerability-item,
+html[data-theme="light"] .report-finding-card {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+
+  border: 1px solid #dbe3ee !important;
+  border-radius: 12px !important;
+
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+html[data-theme="light"] .vulnerability-card strong,
+html[data-theme="light"] .vulnerability-item strong,
+html[data-theme="light"] .report-finding-card strong {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .vulnerability-card p,
+html[data-theme="light"] .vulnerability-item p,
+html[data-theme="light"] .report-finding-card p {
+  color: #475569 !important;
+}
+
+/* AI REVIEW */
+
+html[data-theme="light"] .ai-review-section,
+html[data-theme="light"] .ai-review-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .ai-summary,
+html[data-theme="light"] .priority-item,
+html[data-theme="light"] .ai-finding-card {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #dbe3ee !important;
+}
+
+/* SAFE / EMPTY MESSAGE */
+
+html[data-theme="light"] .report-empty-state,
+html[data-theme="light"] .safe-message {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+/* DOWNLOAD TOOLBAR */
+
+html[data-theme="light"] .reports-toolbar {
+  background: transparent !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-bottom: 12px !important;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1100px) {
+  html[data-theme="light"] .report-overview-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  html[data-theme="light"] .report-summary-grid,
+  html[data-theme="light"] .report-middle-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

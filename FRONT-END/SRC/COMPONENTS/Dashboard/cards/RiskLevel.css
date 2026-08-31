@@ -1,0 +1,43 @@
+.risk-card{
+
+    background:#0f172a;
+
+    border-radius:18px;
+
+    padding:28px;
+
+    text-align:center;
+
+    color:white;
+
+    transition:.35s;
+
+    box-shadow:
+
+    0 12px 35px rgba(0,0,0,.45);
+
+}
+
+.risk-card:hover{
+
+    transform:translateY(-5px);
+
+}
+
+.risk-card h3{
+
+    margin-top:15px;
+
+    font-size:24px;
+
+    font-weight:700;
+
+}
+
+.risk-card p{
+
+    color:#94a3b8;
+
+    margin-top:8px;
+
+}

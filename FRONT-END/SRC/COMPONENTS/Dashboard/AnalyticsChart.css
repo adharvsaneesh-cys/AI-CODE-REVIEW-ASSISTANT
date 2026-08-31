@@ -1,0 +1,419 @@
+.analytics-card {
+    min-height: 380px;
+    padding: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+    background: rgba(17, 24, 39, 0.88);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
+    transition:
+        transform 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.analytics-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.38);
+}
+
+.analytics-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.analytics-header h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 22px;
+}
+
+.analytics-header p {
+    margin-top: 7px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.analytics-total {
+    flex-shrink: 0;
+    padding: 8px 13px;
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    color: #93c5fd;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.chart-wrapper {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.chart-empty-state {
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.chart-empty-state strong {
+    color: #f8fafc;
+    font-size: 18px;
+}
+
+.chart-empty-state span {
+    max-width: 340px;
+    line-height: 1.6;
+}
+
+.safe-ring {
+    width: 112px;
+    height: 112px;
+    margin-bottom: 8px;
+    display: grid;
+    place-items: center;
+    border: 8px solid #22c55e;
+    border-radius: 50%;
+    color: #4ade80;
+    font-size: 31px;
+    font-weight: 800;
+    box-shadow:
+        0 0 0 8px rgba(34, 197, 94, 0.08),
+        0 0 36px rgba(34, 197, 94, 0.22);
+}
+
+.finding-list {
+  margin-top: 12px;
+  padding: 0 18px 20px;
+}
+
+.finding-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.finding-list-header h3 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.finding-list-header span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.finding-item {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.finding-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.finding-title-row strong {
+  color: #f8fafc;
+}
+
+.finding-severity {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.finding-severity.high {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.finding-severity.medium {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.finding-severity.low {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.finding-item p {
+  margin: 7px 0 0;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.finding-line {
+  color: #60a5fa !important;
+  font-size: 12px;
+}
+
+.finding-fix {
+  color: #a7f3d0 !important;
+}
+
+.no-findings {
+  color: #94a3b8;
+  padding: 15px 0;
+}
+
+.finding-security-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.owasp-badge,
+.cwe-badge,
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 8px;
+
+  border-radius: 7px;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.owasp-badge {
+  background: rgba(59, 130, 246, 0.13);
+  color: #93c5fd;
+
+  border: 1px solid rgba(59, 130, 246, 0.24);
+}
+
+.cwe-badge {
+  background: rgba(99, 102, 241, 0.13);
+  color: #a5b4fc;
+
+  border: 1px solid rgba(99, 102, 241, 0.24);
+}
+
+.confidence-badge.high {
+  background: rgba(34, 197, 94, 0.13);
+  color: #86efac;
+
+  border: 1px solid rgba(34, 197, 94, 0.24);
+}
+
+.confidence-badge.medium {
+  background: rgba(245, 158, 11, 0.13);
+  color: #fcd34d;
+
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
+.confidence-badge.low {
+  background: rgba(148, 163, 184, 0.13);
+  color: #cbd5e1;
+
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+html[data-theme="light"] .owasp-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+
+  border-color: #bfdbfe;
+}
+
+html[data-theme="light"] .cwe-badge {
+  background: #e0e7ff;
+  color: #4338ca;
+
+  border-color: #c7d2fe;
+}
+
+html[data-theme="light"] .confidence-badge.high {
+  background: #dcfce7;
+  color: #15803d;
+
+  border-color: #bbf7d0;
+}
+
+html[data-theme="light"] .confidence-badge.medium {
+  background: #fef3c7;
+  color: #b45309;
+
+  border-color: #fde68a;
+}
+
+html[data-theme="light"] .confidence-badge.low {
+  background: #e2e8f0;
+  color: #475569;
+
+  border-color: #cbd5e1;
+}
+
+.finding-severity.critical {
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #fca5a5;
+}
+
+.analytics-save-message {
+  margin: 10px 0;
+
+  padding: 9px 11px;
+
+  border-radius: 8px;
+
+  color: #86efac;
+
+  background:
+    rgba(
+      34,
+      197,
+      94,
+      0.08
+    );
+
+  border:
+    1px solid
+      rgba(
+        34,
+        197,
+        94,
+        0.2
+      );
+
+  font-size: 10px;
+}
+
+.analytics-finding-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin-top: 8px;
+}
+
+.analytics-finding-meta span {
+  padding: 4px 7px;
+
+  border-radius: 6px;
+
+  color: #93c5fd;
+
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.08
+    );
+
+  border:
+    1px solid
+      rgba(
+        59,
+        130,
+        246,
+        0.14
+      );
+
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.finding-save-row {
+  display: flex;
+
+  justify-content:
+    flex-end;
+
+  margin-top: 11px;
+}
+
+.save-finding-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  min-height: 32px;
+
+  padding: 0 10px;
+
+  border-radius: 8px;
+
+  color: #bfdbfe;
+
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.08
+    );
+
+  border:
+    1px solid
+      rgba(
+        59,
+        130,
+        246,
+        0.2
+      );
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.save-finding-button:hover {
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.15
+    );
+}
+
+.save-finding-button.saved {
+  color: #86efac;
+
+  background:
+    rgba(
+      34,
+      197,
+      94,
+      0.08
+    );
+
+  border-color:
+    rgba(
+      34,
+      197,
+      94,
+      0.18
+    );
+
+  cursor: default;
+}

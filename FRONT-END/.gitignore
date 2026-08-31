@@ -37,3 +37,8 @@ BACK-END/__pycache__/
 
 # Optional
 coverage/
+node_modules
+.env
+dist
+__pycache__
+venv

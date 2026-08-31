@@ -1,0 +1,51 @@
+.security-card{
+
+    background:#161b22;
+
+    padding:25px;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    color:white;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.25);
+
+    height:180px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+}
+
+.score-circle{
+
+    width:150px;
+
+    height:150px;
+
+    margin:auto;
+
+    border:8px solid;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:42px;
+
+    font-weight:bold;
+
+    margin-top:20px;
+
+    margin-bottom:20px;
+
+}
