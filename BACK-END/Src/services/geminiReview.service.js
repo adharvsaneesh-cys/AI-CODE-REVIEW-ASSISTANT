@@ -609,7 +609,7 @@ async function generateGeminiReview({
 
   const secureExampleInstruction =
     secureCodeExamples
-      ? "Provide a concise secureExample when a useful corrected replacement can be shown."
+      ? "Provide a concise secureExample for reference. Also provide an exact remediationPatch only when you can identify the exact original source lines from the supplied context. The patch must preserve program behavior except for the security remediation. Never invent surrounding code."
       : 'Always return secureExample as an empty string.';
 
   const owaspInstruction =
@@ -644,6 +644,11 @@ Rules:
 - Do not provide destructive exploitation instructions.
 - Return ONLY valid JSON.
 - Do not wrap the JSON in markdown.
+- secureExample is reference-only and must never be described as an automatically verified patch.
+- remediationPatch.originalSnippet must exactly match source text visible in SECURITY-RELEVANT SOURCE CONTEXT.
+- remediationPatch.startLine and endLine must match the numbered source context.
+- If an exact safe replacement cannot be produced from the supplied context, set remediationPatch.available to false and return empty originalSnippet and replacementCode.
+- Do not introduce eval, shell execution, unsafe deserialization, string-built SQL, hardcoded secrets, disabled TLS verification, unsafe DOM sinks, or weaker cryptography in remediationPatch.replacementCode.
 
 ${secureExampleInstruction}
 
@@ -667,7 +672,15 @@ Return this structure:
       "explanation": "Why the code is risky",
       "impact": "Potential security impact",
       "recommendation": "How to fix it",
-      "secureExample": "Corrected defensive example",
+      "secureExample": "Corrected defensive reference example",
+      "remediationPatch": {
+        "available": true,
+        "startLine": 1,
+        "endLine": 1,
+        "originalSnippet": "Exact original source text from startLine through endLine",
+        "replacementCode": "Exact replacement source text",
+        "reason": "Why this exact replacement remediates the finding"
+      },
       "owasp": {
         "id": "OWASP identifier",
         "category": "OWASP category"
@@ -823,6 +836,53 @@ ${securityContext}
                           "",
                       )
                     : "",
+
+                remediationPatch:
+                  secureCodeExamples &&
+                  finding?.remediationPatch &&
+                  finding.remediationPatch.available === true
+                    ? {
+                        available: true,
+                        startLine: Math.max(
+                          Number(finding.remediationPatch.startLine) ||
+                            Number(finding?.line) ||
+                            1,
+                          1,
+                        ),
+                        endLine: Math.max(
+                          Number(finding.remediationPatch.endLine) ||
+                            Number(finding.remediationPatch.startLine) ||
+                            Number(finding?.line) ||
+                            1,
+                          1,
+                        ),
+                        originalSnippet: String(
+                          finding.remediationPatch.originalSnippet ||
+                            "",
+                        ),
+                        replacementCode: String(
+                          finding.remediationPatch.replacementCode ||
+                            "",
+                        ),
+                        reason: String(
+                          finding.remediationPatch.reason ||
+                            "",
+                        ),
+                      }
+                    : {
+                        available: false,
+                        startLine: Math.max(
+                          Number(finding?.line) || 1,
+                          1,
+                        ),
+                        endLine: Math.max(
+                          Number(finding?.line) || 1,
+                          1,
+                        ),
+                        originalSnippet: "",
+                        replacementCode: "",
+                        reason: "",
+                      },
 
                 owasp:
                   showOwasp

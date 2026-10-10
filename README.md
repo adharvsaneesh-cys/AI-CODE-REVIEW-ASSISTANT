@@ -1,115 +1,65 @@
-CodeGuard AI — AI Code Review Assistant
+CodeGuard AI
 
-CodeGuard AI is a full-stack secure code review platform that combines deterministic local static analysis with AI-assisted review to detect security weaknesses, explain risks, suggest safer alternatives, and help verify remediated code.
+CodeGuard AI is a hybrid AI-assisted secure code review platform that
+combines a deterministic rule-based static security scanner with Google
+Gemini AI-assisted review.
 
-Core Capabilities
+It supports individual source files and multi-file ZIP projects,
+persistent per-file findings, Monaco-based code editing, verification,
+security analytics, reporting, guarded remediation, and secured ZIP
+generation.
 
-JWT-based authentication with access-token refresh
+Key Features
 
-Secure project-based scan management
+JWT authentication with refresh-token sessions
 
-Local static security scanner
+bcrypt password hashing and HTTP-only cookies
 
-AI-assisted review using Google Gemini
+Project creation, selection, ownership and scan history
 
-Multi-language support for Python, JavaScript/TypeScript, Java, C, and C++
+Deterministic rule-based static security scanning
 
-OWASP Top 10:2025 and CWE mapping
+Severity, confidence, OWASP and CWE mapping
 
-Security score and severity analytics
+0--100 security scoring
 
-Vulnerability highlighting in Monaco Editor
+Quick, Balanced and Deep scan profiles
 
-Safe deterministic remediation for supported findings
+Google Gemini AI-assisted security review
 
-Fix-all-safe-issues workflow
+Monaco Editor integration
 
-Verify secured code with a fresh scan
+Deterministic secure-fix workflow
 
-Scan history and recent scans
+Guarded remediation with before/after rescanning
 
-Project-specific security trends
+Multi-language ZIP project scanning
 
-Saved findings
+Persistent per-file ZIP source storage
 
-PDF security reports
+Per-file Gemini reviews
 
-Configurable scan profiles and severity thresholds
+MongoDB GridFS original ZIP storage
 
-Dark/light theme
+Secured ZIP reconstruction and download
 
-Responsive dashboard
+Recharts security analytics
 
-Account security controls
+jsPDF/html2canvas reports
 
-Technology Stack
+Dark/light dashboard themes
 
-Frontend
+Helmet, CORS, rate limiting and request-size protection
 
-React
+Supported Source Languages
 
-Vite
-
-React Router
-
-Monaco Editor
-
-Recharts
-
-jsPDF
-
-html2canvas
-
-Backend
-
-Node.js
-
-Express
-
-MongoDB Atlas
-
-Mongoose
-
-JWT authentication
-
-bcrypt
-
-Helmet
-
-express-rate-limit
-
-CORS
-
-Google Gemini API
-
-High-Level Architecture
-
-React / Vite Frontend
-        |
-        | HTTPS / REST API
-        v
-Node.js / Express Backend
-        |
-        +---- Authentication / JWT
-        |
-        +---- Project & Scan APIs
-        |
-        +---- Local Static Scanner
-        |
-        +---- Gemini AI Review
-        |
-        v
-MongoDB Atlas
-
-The local scanner is the primary deterministic security-analysis layer. Gemini provides a secondary contextual review. A Gemini failure does not prevent the local scanner from returning results.
-
-Supported Languages
-
-Python
+CodeGuard currently supports:
 
 JavaScript
 
 TypeScript
+
+Python
 
 Java
 
@@ -117,139 +67,183 @@ C
 
 C++
 
-Language-aware filtering prevents language-specific rules from being applied to unrelated source languages.
+Technology Stack
+
+Department              Technologies /          Main Use
+Languages
+
+Frontend                React, JavaScript, JSX  Building the user
+interface
+
+Styling                 CSS                     Design, responsiveness
+and dark/light theme
+
+Backend                 Node.js, Express.js,    APIs and server-side
+JavaScript              processing
+
+Database                MongoDB Atlas, Mongoose Users, projects, scans
+and persisted data
+
+Archive Storage         MongoDB GridFS          Original ZIP archive
+storage
+
+Authentication          JWT, bcrypt, Cookies    Login, password
+security and sessions
+
+Security Scanner        JavaScript, Regex /     Deterministic
+Static Rules            vulnerability detection
+
+AI Review               Google Gemini API       AI-assisted security
+analysis and
+remediation guidance
+
+Code Editor             Monaco Editor           Viewing, editing and
+fixing source code
+
+Analytics               Recharts                Security scores, charts
+and trends
+
+Reports                 jsPDF, html2canvas      Security report
+generation
+
+API Security            Helmet, CORS, Rate      Protecting backend APIs
+Limiting
+
+Architecture
+
+                       CodeGuard AI
+                            |
+             +--------------+--------------+
+             |                             |
+             v                             v
+      React + Vite UI              Node.js + Express API
+             |                             |
+             |                 +-----------+-----------+
+             |                 |                       |
+             |                 v                       v
+             |        Deterministic Scanner      Gemini AI
+             |                 |                       |
+             |                 +-----------+-----------+
+             |                             |
+             +-----------------------------+
+                            |
+                            v
+                  MongoDB Atlas + Mongoose
+                            |
+                            v
+                     MongoDB GridFS
+
+Security Analysis Workflow
+
+Source Code / ZIP
+        |
+        v
+Deterministic Rule-Based Scan
+        |
+        v
+Findings + Severity + Score
+        |
+        v
+Gemini AI-Assisted Review
+        |
+        v
+Monaco Editor
+        |
+        v
+Edit / Apply Secure Fix
+        |
+        v
+Deterministic Verification
+        |
+        v
+Persist Improved Source
+        |
+        v
+Refresh Findings + AI Review
+
+The deterministic scanner is the primary vulnerability-detection and
+verification layer. Gemini provides contextual explanations, impact
+analysis, remediation guidance and secure coding assistance.
+
+Guarded Remediation
+
+Automated fixes are validated before persistence.
 
-Scanner Profiles
+Candidate Fix
+     |
+     v
+Deterministic Re-scan
+     |
+     v
+Compare Before / After
+     |
+     +---- Regression / target remains ---> REJECT
+     |
+     +---- Valid improvement -------------> ACCEPT
+                                                |
+                                                v
+                                         Persist source
+                                                |
+                                                v
+                                         Replace findings
+                                                |
+                                                v
+                                         Refresh AI review
 
-Quick
+Guarded remediation can reject candidates that increase deterministic
+findings, worsen weighted severity, reduce the security score, fail to
+remove the targeted vulnerability, or provide no meaningful improvement.
 
-Runs a smaller set of higher-priority security rules for faster feedback.
+Manual verification remains available separately.
 
-Balanced
+ZIP Project Analysis
 
-Default profile. Detects meaningful security findings while excluding lower-value informational noise.
+ZIP scanning supports:
 
-Deep
+Safe archive inspection
 
-Runs the full enabled rule set for the selected language.
+ZIP-slip protection
 
-Severity Levels
+Multi-language source discovery
 
-Critical
+Per-file deterministic scanning
 
-High
+Per-file issue counts and security scores
 
-Medium
+Per-file Gemini reviews
 
-Low
+Persistent source storage
 
-Info
+Source editing and verification
 
-The minimum severity can be configured from Settings.
+Original directory hierarchy preservation
 
-Security Scoring
+Unsupported file and asset preservation
 
-The local scanner calculates a score from 0–100 based on displayed findings and their severities.
+Supported source files are persisted individually with original/current
+source, path, language, findings, score, verification state and AI
+review data.
 
-Typical penalties:
+Secured ZIP Generation
 
-Critical: 25
-High:     15
-Medium:    8
-Low:       3
-Info:      1
+The original uploaded ZIP is retained using MongoDB GridFS.
 
-Scores are bounded between 0 and 100.
+Original ZIP from GridFS
+        |
+        v
+Read Original Entries
+        |
+        v
+Replace Supported Source Entries
+with Latest Persisted Source
+        |
+        v
+Preserve Assets / Config / Docs
+        |
+        v
+Generate Secured ZIP
 
-Security Standards
-
-Findings can include:
-
-OWASP Top 10:2025 category
-
-CWE identifier
-
-Severity
-
-Confidence
-
-Source line
-
-Explanation
-
-Secure recommendation
-
-The project does not claim complete coverage of every OWASP category or every CWE.
-
-Static Scanner Examples
-
-Examples of detectable weaknesses include:
-
-Hardcoded passwords and secrets
-
-Unsafe eval() / dynamic execution
-
-Command injection patterns
-
-SQL injection patterns
-
-Weak cryptographic hashes
-
-Insecure random-number generation
-
-Disabled TLS certificate verification
-
-Unsafe deserialization
-
-Cross-site scripting sinks
-
-Path traversal patterns
-
-Overly permissive CORS
-
-Sensitive-data logging
-
-Weak Java cryptography
-
-Unsafe Java process execution
-
-Unsafe C/C++ buffer functions
-
-C/C++ command injection
-
-C/C++ format-string vulnerabilities
-
-The scanner includes false-positive hardening so execution keywords inside ordinary comments or string literals do not automatically become executable-code findings.
-
-Authentication and Security
-
-The backend includes:
-
-JWT access tokens
-
-Refresh-token flow
-
-HTTP-only refresh cookies
-
-Password hashing with bcrypt
-
-Protected API routes
-
-Helmet security headers
-
-Restricted CORS
-
-API rate limiting
-
-Request-size limits
-
-Centralized error handling
-
-Production error-message hiding
-
-Environment-variable validation
-
-Disabled X-Powered-By
+This preserves the original project structure and non-source assets.
 
 Project Structure
 
@@ -261,288 +255,262 @@ AI-Code-Review-Assistant/
 │   │   ├── middleware/
 │   │   ├── models/
 │   │   ├── routes/
-│   │   └── services/
+│   │   ├── services/
+│   │   └── utils/
 │   ├── server.js
-│   └── package.json
-│
-└── front-end/
-    ├── src/
-    │   ├── components/
-    │   ├── context/
-    │   ├── pages/
-    │   ├── routes/
-    │   └── services/
-    ├── public/
-    └── package.json
+│   ├── package.json
+│   └── .env
+├── front-end/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── styles/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+├── README.md
+└── DEPLOYMENT.md
 
-Environment Variables
+Installation
 
-Create a .env file in the backend project. Do not commit it.
-
-Example:
-
-NODE_ENV=development
-PORT=8001
-
-MONGODB_URI=your_mongodb_connection_string
-
-JWT_ACCESS_SECRET=replace_with_a_long_random_secret
-JWT_REFRESH_SECRET=replace_with_a_different_long_random_secret
-
-FRONTEND_URL=http://localhost:5173
-
-PYTHON_SCANNER_URL=your_scanner_service_url_if_used
-
-GEMINI_API_KEY=your_google_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
-
-Use production-specific secrets and URLs in the deployment environment.
-
-Local Development
-
-1. Clone the repository
+Clone the repository:
 
 git clone <your-repository-url>
 cd AI-Code-Review-Assistant
 
-2. Start the backend
+Backend
 
 cd back-end
 npm install
+
+Create .env:
+
+NODE_ENV=development
+PORT=8001
+MONGODB_URI=your_mongodb_atlas_connection_string
+JWT_ACCESS_SECRET=replace_with_a_long_random_secret
+JWT_REFRESH_SECRET=replace_with_a_different_long_random_secret
+FRONTEND_URL=http://localhost:5173
+GEMINI_API_KEY=your_google_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+
+Never commit .env.
+
+Start:
+
 npm run dev
 
-Backend:
+Local backend:
 
-http://localhost:8001
+http://127.0.0.1:8001
 
 Health endpoint:
 
-http://localhost:8001/health
+http://127.0.0.1:8001/health
 
-3. Start the frontend
-
-Open another terminal:
+Frontend
 
 cd front-end
 npm install
 npm run dev
 
-Frontend:
+Local frontend:
 
 http://localhost:5173
 
 Production Build
 
-Frontend
-
 cd front-end
 npm run build
-npm run preview
 
-Vite production preview normally runs on:
+Vite generates the production build in dist/.
 
-http://localhost:4173
+For complete deployment instructions, see DEPLOYMENT.md.
 
-Backend
+API
 
-Set NODE_ENV=production in the deployment environment and run:
+The backend API prefix is:
 
-cd back-end
-npm start
+/api/v1
 
-Do not place production secrets directly in source code.
+Major API areas include authentication, projects, source scans, ZIP
+scans, ZIP project files, per-file AI review, verification, secured ZIP
+download and scan history.
 
-Production Configuration
+Protected resources enforce authenticated ownership where applicable.
 
-Before deployment:
+Security Controls
 
-Set NODE_ENV=production.
+CodeGuard includes:
 
-Use a strong production JWT_ACCESS_SECRET.
+JWT authentication
 
-Use a different strong JWT_REFRESH_SECRET.
+bcrypt password hashing
 
-Set the production MongoDB Atlas URI.
+HTTP-only refresh cookies
 
-Set the production Gemini API key.
+Helmet
 
-Set FRONTEND_URL to the real frontend domain.
-
-Update the backend CORS allowlist for the production frontend origin.
-
-Use HTTPS.
-
-Configure secure environment variables on the hosting provider.
-
-Never commit .env.
-
-Final Smoke Test
-
-Before presenting or deploying, verify:
-
-Authentication
-[ ] Register
-[ ] Login
-[ ] Access-token refresh
-[ ] Logout
-[ ] Protected API rejection while logged out
-
-Projects
-[ ] Create project
-[ ] Select project
-[ ] Delete project
-[ ] Scan history stays associated with correct project
-
-Scanner
-[ ] Python scan
-[ ] JavaScript scan
-[ ] Java scan
-[ ] C/C++ scan
-[ ] Correct language-specific findings
-[ ] No cross-language findings
-[ ] Actual eval(userInput) is detected
-[ ] "eval()" inside harmless prompt text is not detected
-
-Remediation
-[ ] Apply single safe fix
-[ ] Fix All Safe Issues
-[ ] Verify Secured Code
-[ ] Save secured source
-
-Dashboard
-[ ] Security score
-[ ] Severity counts
-[ ] Finding cards
-[ ] AI review
-[ ] Recent scans
-
-Other Pages
-[ ] History
-[ ] Reports / PDF
-[ ] Projects
-[ ] Saved Findings
-[ ] Security Trends
-[ ] Settings
-[ ] Security / password controls
-
-UI
-[ ] Dark mode
-[ ] Light mode
-[ ] Mobile
-[ ] Tablet
-[ ] Desktop
-[ ] No critical browser-console errors
-
-Testing Status
-
-The project has been manually tested for:
-
-Authentication and session refresh
-
-Protected backend routes
-
-Git-secret protection
-
-CORS behavior
-
-Helmet headers
+Restricted CORS
 
 Rate limiting
 
-Backend request-size handling
+Request-size protection
 
-Scanner regression behavior
+Authentication middleware
 
-Multi-language isolation
+Ownership validation
 
-Project data integrity
+Input validation
 
-Frontend production build
+Production-safe error handling
 
-Production preview
+Disabled X-Powered-By
 
-Responsive UI
+Source size/line limits
 
-Theme persistence
+ZIP archive limits
 
-Scanner false-positive handling
+Safe ZIP paths
 
-Demonstration Scenario
+ZIP-slip protection
 
-A concise demo can use vulnerable Python code such as:
+Scan Profiles
 
-import hashlib
-import requests
-import pickle
-import os
+Quick uses a smaller high-value rule set for faster analysis.
 
-password = "admin123"
+Balanced provides a balance between coverage and performance.
 
-user_input = input("Command: ")
+Deep uses the broadest deterministic rule set for more comprehensive
+analysis.
 
-eval(user_input)
-os.system(user_input)
+Minimum severity and AI-review settings can also be configured.
 
-hashlib.md5(b"password")
+Database
 
-requests.get(
-    "https://example.com",
-    verify=False
-)
+MongoDB Atlas stores users, projects, scans, findings, scores, ZIP
+project-file metadata, persisted source versions, AI reviews and
+verification state.
 
-pickle.loads(user_input)
+Mongoose provides schemas and database access.
 
-CodeGuard can identify the hardcoded credential, dynamic execution, shell execution, weak hashing, disabled TLS verification, and unsafe deserialization.
+MongoDB GridFS stores original ZIP archives required for secured-project
+reconstruction.
 
-For false-positive validation:
+Testing Checklist
 
-const prompt =
-  "Explain why eval() is dangerous in Python.";
+AUTHENTICATION
+[ ] Register
+[ ] Login
+[ ] Token refresh
+[ ] Logout
+[ ] Protected routes
 
-This should not be reported as actual eval() execution.
+PROJECTS
+[ ] Create/select/delete project
+[ ] Ownership enforcement
+[ ] Project scan history
 
-Known Limitations
+SCANNING
+[ ] Paste-code scan
+[ ] Source-file scan
+[ ] Findings
+[ ] Security score
+[ ] OWASP/CWE
+[ ] Gemini review
 
-The local scanner is primarily rule/regex-based and is not a full compiler, parser, SAST engine, or symbolic-execution engine.
+ZIP PROJECTS
+[ ] ZIP upload
+[ ] Supported languages
+[ ] Per-file findings
+[ ] Per-file Gemini
+[ ] File switching
+[ ] Source persistence
+[ ] Reopen ZIP scan
 
-Complex data-flow vulnerabilities may require deeper semantic analysis.
+REMEDIATION
+[ ] Apply Secure Fix
+[ ] Deterministic verification
+[ ] Improved fix accepted
+[ ] Regression rejected
+[ ] Findings/score updated
+[ ] Gemini refreshed
 
-AI output can vary and should be treated as advisory.
+SECURED ZIP
+[ ] Download secured ZIP
+[ ] Folder hierarchy preserved
+[ ] Verified source included
+[ ] Config/docs/assets preserved
 
-Automatic fixes are offered only when a deterministic replacement is considered safe.
+REPORTING
+[ ] Analytics
+[ ] Trends
+[ ] PDF report
+[ ] Dark/light theme
 
-OWASP/CWE mappings are guidance and not formal certification.
+Production Security
 
-Security score is a project-defined heuristic, not an industry certification score.
+Never commit .env.
 
-Future Scope
+Never expose Gemini or MongoDB credentials to frontend code.
 
-Possible future work, if the project is extended later:
+Use strong and different JWT secrets.
 
-AST-based scanning
+Use HTTPS in production.
 
-Interprocedural data-flow analysis
+Restrict CORS.
 
-GitHub/GitLab integration
+Keep Helmet and rate limiting enabled.
 
-CI/CD security gates
+Keep request/upload limits enabled.
 
-Dependency vulnerability scanning
+Enforce project, scan and file ownership.
 
-SARIF export
+Treat Gemini output as advisory.
 
-Team workspaces and RBAC
+Deterministically verify automated remediation.
 
-Incremental scanning
+Protect MongoDB Atlas and GridFS.
 
-These are intentionally outside the current stable project scope.
+Never log passwords, tokens, secrets, cookies or private source
+code.
 
-Author
+Authors
 
 Adharv S Aneesh
 
-B.Tech CSE — Cyber Security
+Dhammadeep M Ganvir
+
+Utkarsh S Shamkuwar
+
+Harsha Bhoge
+
+Sakshi Kubade
+
+Project Information
+
+Project Name: CodeGuard AI
+Project Type: AI-Assisted Secure Code Review Platform
+Primary Security Engine: Deterministic Rule-Based Static Scanner
+AI Layer: Google Gemini API
+Frontend: React + Vite
+Backend: Node.js + Express.js
+Database: MongoDB Atlas + Mongoose
+Archive Storage: MongoDB GridFS
+Authentication: JWT + bcrypt + HTTP-only cookies
+Code Editor: Monaco Editor
+Analytics: Recharts
+Reports: jsPDF + html2canvas
 
 Disclaimer
 
-CodeGuard AI is intended to assist secure-code review. It should complement, not replace, professional security testing, code review, dependency analysis, penetration testing, and secure development practices.
+CodeGuard AI is a security-analysis and developer-assistance platform.
+Static-analysis rules and AI-generated guidance can produce false
+positives, false negatives or incomplete remediation. Security-sensitive
+software should also undergo appropriate testing, dependency analysis,
+manual review and professional security assessment before production
+deployment.

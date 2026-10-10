@@ -9,7 +9,15 @@ import {
 } from "react";
 
 import { AnalysisContext } from "../../context/analysis-context";
-import { analyzePastedCode } from "../../services/scan";
+
+import {
+  analyzePastedCode,
+  getZipProjectFiles,
+  getZipProjectFileSource,
+  generateZipFileAiReview,
+  verifyZipProjectFile,
+  downloadSecuredZip,
+} from "../../services/scan";
 
 import "./CodeEditor.css";
 
@@ -601,6 +609,63 @@ export default function CodeEditor() {
     useRef(null);
 
   const [
+    activeZipFilePath,
+    setActiveZipFilePath,
+  ] = useState("");
+
+  const zipDraftsRef =
+    useRef({});
+
+  const currentZipFilePathRef =
+    useRef("");
+
+  const zipHydratedScanRef =
+    useRef("");
+
+  const zipLoadRequestRef =
+    useRef(0);
+
+  const zipAiRequestRef =
+    useRef(0);
+
+  const isZipScan =
+    analysisResult?.sourceType ===
+    "zip";
+
+  const zipFiles =
+    useMemo(
+      () =>
+        isZipScan &&
+        Array.isArray(
+          analysisResult
+            ?.zipMetadata
+            ?.files,
+        )
+          ? analysisResult
+              .zipMetadata
+              .files
+          : [],
+      [
+        isZipScan,
+        analysisResult,
+      ],
+    );
+
+  const activeZipFile =
+    useMemo(
+      () =>
+        zipFiles.find(
+          (file) =>
+            file.path ===
+            activeZipFilePath,
+        ) || null,
+      [
+        zipFiles,
+        activeZipFilePath,
+      ],
+    );
+
+  const [
     selectedIssue,
     setSelectedIssue,
   ] = useState(null);
@@ -608,6 +673,11 @@ export default function CodeEditor() {
   const [
     rescanning,
     setRescanning,
+  ] = useState(false);
+
+  const [
+    downloadingZip,
+    setDownloadingZip,
   ] = useState(false);
 
   const [
@@ -636,9 +706,9 @@ export default function CodeEditor() {
   ] = useState(false);
 
   const [
-  fixesApplied,
-  setFixesApplied,
-] = useState(false);
+    fixesApplied,
+    setFixesApplied,
+  ] = useState(false);
 
   const [
     theme,
@@ -689,15 +759,658 @@ export default function CodeEditor() {
   }, []);
 
   const issues =
-    useMemo(
-      () =>
-        Array.isArray(
+    useMemo(() => {
+      if (isZipScan) {
+        if (!activeZipFilePath) {
+          return [];
+        }
+
+        if (
+          Array.isArray(
+            activeZipFile?.issues,
+          )
+        ) {
+          return activeZipFile.issues;
+        }
+
+        return Array.isArray(
           analysisResult?.issues,
         )
-          ? analysisResult.issues
-          : [],
-      [analysisResult],
+          ? analysisResult.issues.filter(
+              (issue) =>
+                issue.filePath ===
+                activeZipFilePath,
+            )
+          : [];
+      }
+
+      return Array.isArray(
+        analysisResult?.issues,
+      )
+        ? analysisResult.issues
+        : [];
+    }, [
+      isZipScan,
+      activeZipFilePath,
+      activeZipFile,
+      analysisResult,
+    ]);
+
+  async function loadZipAiReview(
+    filePath,
+    force = false,
+  ) {
+    const scanId =
+      analysisResult?._id;
+
+    if (
+      !isZipScan ||
+      !scanId ||
+      !filePath
+    ) {
+      return;
+    }
+
+    const requestId =
+      zipAiRequestRef.current +
+      1;
+
+    zipAiRequestRef.current =
+      requestId;
+
+    setAnalysisResult(
+      (current) => {
+        if (
+          !current ||
+          current._id !==
+            scanId
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          aiReview: {
+            available: false,
+            summary:
+              `Reviewing ${filePath} with Gemini...`,
+            riskLevel:
+              "unknown",
+            priorityActions: [],
+            detailedFindings: [],
+            codeQualitySuggestions: [],
+            finalChecklist: [],
+            error: null,
+          },
+        };
+      },
     );
+
+    try {
+      const result =
+        await generateZipFileAiReview({
+          scanId,
+          filePath,
+          force,
+        });
+
+      if (
+        requestId !==
+          zipAiRequestRef.current ||
+        currentZipFilePathRef.current !==
+          filePath
+      ) {
+        return;
+      }
+
+      const reviewedFile =
+        result?.file;
+
+      if (!reviewedFile) {
+        throw new Error(
+          "The backend did not return the selected file AI review.",
+        );
+      }
+
+      const review =
+        reviewedFile.aiReview || {
+          available: false,
+          summary:
+            `No AI review is available for ${filePath}.`,
+          riskLevel:
+            "unknown",
+          priorityActions: [],
+          detailedFindings: [],
+          codeQualitySuggestions: [],
+          finalChecklist: [],
+          error:
+            "AI review unavailable.",
+        };
+
+      setAnalysisResult(
+        (current) => {
+          if (
+            !current ||
+            current._id !==
+              scanId ||
+            currentZipFilePathRef.current !==
+              filePath
+          ) {
+            return current;
+          }
+
+          const currentFiles =
+            Array.isArray(
+              current
+                ?.zipMetadata
+                ?.files,
+            )
+              ? current
+                  .zipMetadata
+                  .files
+              : [];
+
+          return {
+            ...current,
+            aiReview:
+              review,
+
+            zipMetadata: {
+              ...current.zipMetadata,
+
+              geminiReviewedFile:
+                filePath,
+
+              files:
+                currentFiles.map(
+                  (currentFile) =>
+                    currentFile.path ===
+                    filePath
+                      ? {
+                          ...currentFile,
+                          aiReview:
+                            review,
+                          aiReviewStatus:
+                            reviewedFile.aiReviewStatus,
+                          aiReviewedAt:
+                            reviewedFile.aiReviewedAt,
+                        }
+                      : currentFile,
+                ),
+            },
+          };
+        },
+      );
+    } catch (error) {
+      if (
+        requestId !==
+          zipAiRequestRef.current ||
+        currentZipFilePathRef.current !==
+          filePath
+      ) {
+        return;
+      }
+
+      setAnalysisResult(
+        (current) => {
+          if (
+            !current ||
+            current._id !==
+              scanId
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            aiReview: {
+              available: false,
+              summary:
+                `Gemini review failed for ${filePath}.`,
+              riskLevel:
+                "unknown",
+              priorityActions: [],
+              detailedFindings: [],
+              codeQualitySuggestions: [],
+              finalChecklist: [],
+              error:
+                error.message ||
+                "Unable to generate the selected file AI review.",
+            },
+          };
+        },
+      );
+    }
+  }
+
+  async function loadZipFile(
+    file,
+  ) {
+    if (!file) {
+      return;
+    }
+
+    const currentPath =
+      currentZipFilePathRef.current;
+
+    if (currentPath) {
+      zipDraftsRef.current[
+        currentPath
+      ] =
+        editorRef.current
+          ?.getModel()
+          ?.getValue() ??
+        editorCode ??
+        "";
+    }
+
+    const nextPath =
+      file.path;
+
+    currentZipFilePathRef.current =
+      nextPath;
+
+    setActiveZipFilePath(
+      nextPath,
+    );
+
+    loadZipAiReview(
+      nextPath,
+    );
+
+    setEditorLanguage(
+      file.language ||
+        "javascript",
+    );
+
+    setEditorFileName(
+      file.path ||
+        file.fileName ||
+        "zip-source",
+    );
+
+    setSelectedIssue(
+      null,
+    );
+
+    setBeforeScore(
+      null,
+    );
+
+    setBeforeIssues(
+      null,
+    );
+
+    setAfterScore(
+      null,
+    );
+
+    setFixesApplied(
+      false,
+    );
+
+    const hasDraft =
+      Object.prototype
+        .hasOwnProperty.call(
+          zipDraftsRef.current,
+          nextPath,
+        );
+
+    if (hasDraft) {
+      setEditorCode(
+        zipDraftsRef.current[
+          nextPath
+        ],
+      );
+
+      setMessage("");
+      return;
+    }
+
+    const scanId =
+      analysisResult?._id;
+
+    if (!scanId) {
+      const fallbackCode =
+        file.code || "";
+
+      zipDraftsRef.current[
+        nextPath
+      ] = fallbackCode;
+
+      setEditorCode(
+        fallbackCode,
+      );
+
+      setMessage("");
+      return;
+    }
+
+    const requestId =
+      zipLoadRequestRef.current +
+      1;
+
+    zipLoadRequestRef.current =
+      requestId;
+
+    setMessage(
+      `Loading ${nextPath}...`,
+    );
+
+    try {
+      const result =
+        await getZipProjectFileSource({
+          scanId,
+          filePath:
+            nextPath,
+        });
+
+      if (
+        requestId !==
+          zipLoadRequestRef.current ||
+        currentZipFilePathRef.current !==
+          nextPath
+      ) {
+        return;
+      }
+
+      const persistedFile =
+        result?.file;
+
+      if (!persistedFile) {
+        throw new Error(
+          "The backend did not return the ZIP project file source.",
+        );
+      }
+
+      const persistedCode =
+        typeof persistedFile.code ===
+        "string"
+          ? persistedFile.code
+          : typeof persistedFile.currentCode ===
+              "string"
+            ? persistedFile.currentCode
+            : "";
+
+      zipDraftsRef.current[
+        nextPath
+      ] = persistedCode;
+
+      setEditorCode(
+        persistedCode,
+      );
+
+      setEditorLanguage(
+        persistedFile.language ||
+          file.language ||
+          "javascript",
+      );
+
+      setEditorFileName(
+        persistedFile.path ||
+          nextPath,
+      );
+
+      setAnalysisResult(
+        (current) => {
+          if (
+            !current ||
+            current._id !==
+              scanId
+          ) {
+            return current;
+          }
+
+          const currentFiles =
+            Array.isArray(
+              current
+                ?.zipMetadata
+                ?.files,
+            )
+              ? current
+                  .zipMetadata
+                  .files
+              : [];
+
+          return {
+            ...current,
+
+            zipMetadata: {
+              ...current.zipMetadata,
+
+              files:
+                currentFiles.map(
+                  (currentFile) =>
+                    currentFile.path ===
+                    nextPath
+                      ? {
+                          ...currentFile,
+                          ...persistedFile,
+                          code:
+                            persistedCode,
+                        }
+                      : currentFile,
+                ),
+            },
+          };
+        },
+      );
+
+      setMessage("");
+    } catch (error) {
+      if (
+        requestId !==
+          zipLoadRequestRef.current ||
+        currentZipFilePathRef.current !==
+          nextPath
+      ) {
+        return;
+      }
+
+      const fallbackCode =
+        file.code || "";
+
+      if (fallbackCode) {
+        zipDraftsRef.current[
+          nextPath
+        ] = fallbackCode;
+
+        setEditorCode(
+          fallbackCode,
+        );
+      }
+
+      setMessage(
+        error.message ||
+          "Unable to load the persisted ZIP project file.",
+      );
+    }
+  }
+    useEffect(() => {
+    if (!isZipScan) {
+      zipHydratedScanRef.current =
+        "";
+
+      zipLoadRequestRef.current +=
+        1;
+
+      zipAiRequestRef.current +=
+        1;
+
+      if (
+        currentZipFilePathRef.current
+      ) {
+        currentZipFilePathRef.current =
+          "";
+      }
+
+      if (activeZipFilePath) {
+        setActiveZipFilePath(
+          "",
+        );
+      }
+
+      zipDraftsRef.current = {};
+      return;
+    }
+
+    const scanId =
+      analysisResult?._id;
+
+    if (!scanId) {
+      return;
+    }
+
+    if (
+      zipHydratedScanRef.current ===
+      scanId
+    ) {
+      return;
+    }
+
+    zipHydratedScanRef.current =
+      scanId;
+
+    zipLoadRequestRef.current +=
+      1;
+
+    zipAiRequestRef.current +=
+      1;
+
+    currentZipFilePathRef.current =
+      "";
+
+    setActiveZipFilePath(
+      "",
+    );
+
+    zipDraftsRef.current = {};
+
+    let cancelled = false;
+
+    async function hydrateZipProject() {
+      try {
+        setMessage(
+          "Loading persisted ZIP project files...",
+        );
+
+        const result =
+          await getZipProjectFiles(
+            scanId,
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        const persistedFiles =
+          Array.isArray(
+            result?.files,
+          )
+            ? result.files
+            : [];
+
+        if (!persistedFiles.length) {
+          throw new Error(
+            "No persisted source files were found for this ZIP scan. Create a new ZIP scan with persistent storage enabled.",
+          );
+        }
+
+        const firstFile =
+          [...persistedFiles].sort(
+            (a, b) => {
+              const issueDifference =
+                (b.issueTotal || 0) -
+                (a.issueTotal || 0);
+
+              if (
+                issueDifference !== 0
+              ) {
+                return issueDifference;
+              }
+
+              return (
+                (a.securityScore ??
+                  100) -
+                (b.securityScore ??
+                  100)
+              );
+            },
+          )[0];
+
+        setAnalysisResult(
+          (current) => {
+            if (
+              !current ||
+              current._id !==
+                scanId
+            ) {
+              return current;
+            }
+
+            return {
+              ...current,
+
+              zipMetadata: {
+                ...current.zipMetadata,
+
+                archiveName:
+                  result.archiveName ||
+                  current
+                    .zipMetadata
+                    ?.archiveName,
+
+                files:
+                  persistedFiles,
+              },
+            };
+          },
+        );
+
+        await loadZipFile(
+          firstFile,
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        zipHydratedScanRef.current =
+          "";
+
+        setMessage(
+          error.message ||
+            "Unable to load persisted ZIP project files.",
+        );
+      }
+    }
+
+    hydrateZipProject();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isZipScan,
+    analysisResult?._id,
+  ]);
+
+  function handleZipFileChange(
+    event,
+  ) {
+    const nextFile =
+      zipFiles.find(
+        (file) =>
+          file.path ===
+          event.target.value,
+      );
+
+    if (nextFile) {
+      loadZipFile(
+        nextFile,
+      );
+    }
+  }
 
   const suggestions =
     useMemo(() => {
@@ -1014,6 +1727,7 @@ export default function CodeEditor() {
   }, [
     analysisResult,
     editorCode,
+    activeZipFilePath,
   ]);
 
   function rememberBaseline() {
@@ -1024,9 +1738,13 @@ export default function CodeEditor() {
     }
 
     setBeforeScore(
-      analysisResult
-        ?.securityScore ??
-        100,
+      isZipScan
+        ? activeZipFile
+            ?.securityScore ??
+          100
+        : analysisResult
+            ?.securityScore ??
+          100,
     );
 
     setBeforeIssues(
@@ -1063,17 +1781,6 @@ export default function CodeEditor() {
       return lines;
     }
 
-    /*
-     * For Python we combine all
-     * required imports into one
-     * physical line.
-     *
-     * This is important for the
-     * 25,000-line stress file,
-     * because adding new lines
-     * would push it above the
-     * scanner limit.
-     */
     if (
       editorLanguage ===
       "python"
@@ -1107,14 +1814,6 @@ export default function CodeEditor() {
             ),
           ].join(", ")}`;
 
-        /*
-         * First try to replace an
-         * existing blank line near
-         * the top of the source.
-         *
-         * Line count remains exactly
-         * the same.
-         */
         const blankIndex =
           lines.findIndex(
             (
@@ -1140,10 +1839,6 @@ export default function CodeEditor() {
           return next;
         }
 
-        /*
-         * Otherwise merge with an
-         * existing Python import.
-         */
         const importIndex =
           lines.findIndex(
             (
@@ -1202,593 +1897,702 @@ export default function CodeEditor() {
     ];
   }
 
-  function applySingleFix() {
-    if (
-      !selectedIssue
-    ) {
+  async function persistGuardedZipFix(updatedCode, targetRuleId = "") {
+    const scanId = analysisResult?._id;
+    const verifiedPath = activeZipFilePath;
+
+    if (!scanId || !verifiedPath) {
+      setMessage("Select a ZIP project file before applying a secure fix.");
+      return false;
+    }
+
+    setRescanning(true);
+    setMessage(`Validating secure fix for ${verifiedPath}...`);
+
+    try {
+      const result = await verifyZipProjectFile({
+        scanId,
+        filePath: verifiedPath,
+        code: updatedCode,
+        guardRemediation: true,
+        targetRuleId,
+      });
+
+      const verifiedFile = result?.file;
+
+      if (!verifiedFile) {
+        throw new Error("The backend did not return the ZIP project file.");
+      }
+
+      const persistedCode =
+        typeof verifiedFile.code === "string"
+          ? verifiedFile.code
+          : typeof verifiedFile.currentCode === "string"
+            ? verifiedFile.currentCode
+            : editorCode;
+
+      zipDraftsRef.current[verifiedPath] = persistedCode;
+      setEditorCode(persistedCode);
+
+      const model = editorRef.current?.getModel();
+      if (model && model.getValue() !== persistedCode) {
+        model.setValue(persistedCode);
+      }
+
+      setAnalysisResult((current) => {
+        if (!current || current._id !== scanId) {
+          return current;
+        }
+
+        const currentFiles = Array.isArray(current?.zipMetadata?.files)
+          ? current.zipMetadata.files
+          : [];
+
+        return {
+          ...current,
+          securityScore: result.scan?.securityScore ?? current.securityScore,
+          issueCount: result.scan?.issueCount ?? current.issueCount,
+          issues: Array.isArray(result.scan?.issues)
+            ? result.scan.issues
+            : current.issues,
+          zipMetadata: {
+            ...current.zipMetadata,
+            files: currentFiles.map((file) =>
+              file.path === verifiedPath
+                ? { ...file, ...verifiedFile, code: persistedCode }
+                : file,
+            ),
+          },
+        };
+      });
+
+      setAfterScore(verifiedFile.securityScore ?? 100);
+      setSelectedIssue(null);
+      decorationsRef.current?.clear();
+
+      if (result.accepted === false) {
+        setFixesApplied(false);
+        setMessage(
+          result.message ||
+            `Secure fix rejected for ${verifiedPath}. The last verified source was restored.`,
+        );
+
+        if (typeof refreshScans === "function") {
+          await refreshScans();
+        }
+
+        return false;
+      }
+
+      setFixesApplied(false);
+      setMessage(`Secure fix verified for ${verifiedPath}. Refreshing Gemini review...`);
+      await loadZipAiReview(verifiedPath, true);
+
+      if (currentZipFilePathRef.current === verifiedPath) {
+        setMessage(`Secure fix accepted and verified for ${verifiedPath}.`);
+      }
+
+      if (typeof refreshScans === "function") {
+        await refreshScans();
+      }
+
+      return true;
+    } catch (error) {
+      setMessage(error.message || "Unable to validate the secure fix.");
+      return false;
+    } finally {
+      setRescanning(false);
+    }
+  }
+
+  async function applySingleFix() {
+    if (!selectedIssue) {
       return;
     }
 
     rememberBaseline();
 
-    let lines =
-      String(
-        editorCode || "",
-      ).split(
-        /\r?\n/,
-      );
+    let lines = String(editorCode || "").split(/\r?\n/);
+    const index = Number(selectedIssue.line) - 1;
 
-    const index =
-      Number(
-        selectedIssue.line,
-      ) - 1;
-
-    if (
-      index < 0 ||
-      index >=
-        lines.length
-    ) {
+    if (index < 0 || index >= lines.length) {
       setMessage(
-        "The selected finding no longer matches the editor. Run Verify Secured Code to refresh the findings.",
+        isZipScan
+          ? "The selected finding no longer matches the editor. Run Verify Project File to refresh the findings."
+          : "The selected finding no longer matches the editor. Run Verify Secured Code to refresh the findings.",
       );
-
       return;
     }
 
-    const freshSuggestion =
-      buildSecureSuggestion({
-        issue:
-          selectedIssue,
+    const freshSuggestion = buildSecureSuggestion({
+      issue: selectedIssue,
+      language: editorLanguage,
+      currentLine: lines[index],
+    });
 
-        language:
-          editorLanguage,
-
-        currentLine:
-          lines[index],
-      });
-
-    if (
-      !freshSuggestion
-        ?.autoApplicable
-    ) {
+    if (!freshSuggestion?.autoApplicable) {
       setMessage(
-        "This finding is already fixed or requires manual review. Run Verify Secured Code to refresh the findings.",
+        isZipScan
+          ? "This finding is already fixed or requires manual review."
+          : "This finding is already fixed or requires manual review. Run Verify Secured Code to refresh the findings.",
       );
-
       return;
     }
 
-    if (
-      !freshSuggestion.code ||
-      freshSuggestion.code ===
-        lines[index]
-    ) {
-      setMessage(
-        "This secure replacement is already present. Run Verify Secured Code to refresh the findings.",
-      );
-
+    if (!freshSuggestion.code || freshSuggestion.code === lines[index]) {
+      setMessage("This secure replacement is already present.");
       return;
     }
 
-    lines[index] =
-      freshSuggestion.code;
+    lines[index] = freshSuggestion.code;
+    lines = addImports(lines, freshSuggestion.imports || []);
+    const updatedCode = lines.join("\n");
 
-    lines =
-      addImports(
-        lines,
-
-        freshSuggestion
-          .imports || [],
-      );
-
-    const updatedCode =
-      lines.join("\n");
-
-    setEditorCode(
-      updatedCode,
-    );
-
-    const editor =
-      editorRef.current;
-
-    if (editor) {
-      const model =
-        editor.getModel();
-
-      if (
-        model &&
-        model.getValue() !==
-          updatedCode
-      ) {
-        model.setValue(
-          updatedCode,
-        );
-      }
+    if (isZipScan) {
+      await persistGuardedZipFix(updatedCode, String(selectedIssue.ruleId || ""));
+      return;
     }
 
-    decorationsRef.current
-      ?.clear();
-
-    setMessage(
-      "Secure fix applied. Click Verify Secured Code to refresh the security findings.",
-    );
+    setEditorCode(updatedCode);
+    const model = editorRef.current?.getModel();
+    if (model && model.getValue() !== updatedCode) {
+      model.setValue(updatedCode);
+    }
+    decorationsRef.current?.clear();
+    setMessage("Secure fix applied. Click Verify Secured Code to refresh the security findings.");
   }
 
-  function fixAllSafeIssues() {
-  if (
-    safeFixGroups.length ===
-    0
-  ) {
-    setMessage(
-      fixesApplied
-        ? "Safe fixes have already been applied. Click Verify Secured Code to refresh the findings."
-        : "No deterministic fixes are available. Remaining findings require manual review.",
-    );
+  async function fixAllSafeIssues() {
+    if (safeFixGroups.length === 0) {
+      setMessage(
+        fixesApplied
+          ? isZipScan
+            ? "Safe fixes have already been applied."
+            : "Safe fixes have already been applied. Click Verify Secured Code to refresh the findings."
+          : "No deterministic fixes are available. Remaining findings require manual review.",
+      );
+      return;
+    }
 
-    return;
-  }
+    rememberBaseline();
 
-  rememberBaseline();
+    const liveCode =
+      editorRef.current?.getModel()?.getValue() ?? editorCode ?? "";
+    let lines = String(liveCode).split(/\r?\n/);
+    const imports = new Set();
+    let codeChanges = 0;
+    let findingsCovered = 0;
 
-  /*
-   * Always read the LIVE Monaco
-   * document rather than possibly
-   * stale React state.
-   */
-  const liveCode =
-    editorRef.current
-      ?.getModel()
-      ?.getValue() ??
-    editorCode ??
-    "";
-
-  let lines =
-    String(
-      liveCode,
-    ).split(
-      /\r?\n/,
-    );
-
-  const imports =
-    new Set();
-
-  let codeChanges =
-    0;
-
-  let findingsCovered =
-    0;
-
-  safeFixGroups.forEach(
-    (group) => {
-      const index =
-        Number(
-          group.line,
-        ) - 1;
-
-      if (
-        index < 0 ||
-        index >=
-          lines.length
-      ) {
+    safeFixGroups.forEach((group) => {
+      const index = Number(group.line) - 1;
+      if (index < 0 || index >= lines.length) {
         return;
       }
 
-      let currentLine =
-        lines[index];
-
-      if (
-        !currentLine
-          ?.trim()
-      ) {
+      let currentLine = lines[index];
+      if (!currentLine?.trim()) {
         return;
       }
 
-      const orderedFixes =
-        [
-          ...group.fixes,
-        ].sort(
-          (
-            first,
-            second,
-          ) =>
-            getAutoFixPriority(
-              second.issue
-                .ruleId,
-            ) -
-            getAutoFixPriority(
-              first.issue
-                .ruleId,
-            ),
-        );
+      const orderedFixes = [...group.fixes].sort(
+        (first, second) =>
+          getAutoFixPriority(second.issue.ruleId) -
+          getAutoFixPriority(first.issue.ruleId),
+      );
 
-      let changed =
-        false;
+      let changed = false;
 
-      /*
-       * Apply compatible fixes
-       * sequentially to the SAME
-       * physical line.
-       */
-      for (
-        const entry
-        of orderedFixes
-      ) {
-        const suggestion =
-          buildSecureSuggestion({
-            issue:
-              entry.issue,
+      for (const entry of orderedFixes) {
+        const suggestion = buildSecureSuggestion({
+          issue: entry.issue,
+          language: editorLanguage,
+          currentLine,
+        });
 
-            language:
-              editorLanguage,
-
-            currentLine,
-          });
-
-        if (
-          !suggestion
-            ?.autoApplicable
-        ) {
+        if (!suggestion?.autoApplicable || !suggestion.code || suggestion.code === currentLine) {
           continue;
         }
 
-        if (
-          !suggestion.code ||
-          suggestion.code ===
-            currentLine
-        ) {
-          continue;
-        }
-
-        currentLine =
-          suggestion.code;
-
-        (
-          suggestion.imports ||
-          []
-        ).forEach(
-          (item) =>
-            imports.add(
-              item,
-            ),
-        );
-
-        changed =
-          true;
-
-        findingsCovered +=
-          1;
+        currentLine = suggestion.code;
+        (suggestion.imports || []).forEach((item) => imports.add(item));
+        changed = true;
+        findingsCovered += 1;
       }
 
       if (changed) {
-        lines[index] =
-          currentLine;
-
-        codeChanges +=
-          1;
+        lines[index] = currentLine;
+        codeChanges += 1;
       }
-    },
-  );
+    });
 
-  if (
-    codeChanges ===
-    0
-  ) {
-    setFixesApplied(
-      true,
-    );
-
-    setMessage(
-      "The deterministic secure replacements are already present. Click Verify Secured Code.",
-    );
-
-    return;
-  }
-
-  lines =
-    addImports(
-      lines,
-      [
-        ...imports,
-      ],
-    );
-
-  const updatedCode =
-    lines.join(
-      "\n",
-    );
-
-  /*
-   * Update Monaco immediately.
-   */
-  const editor =
-    editorRef.current;
-
-  const model =
-    editor?.getModel();
-
-  if (
-    model &&
-    model.getValue() !==
-      updatedCode
-  ) {
-    model.setValue(
-      updatedCode,
-    );
-  }
-
-  /*
-   * Update Context state too.
-   */
-  setEditorCode(
-    updatedCode,
-  );
-
-  setFixesApplied(
-    true,
-  );
-
-  decorationsRef.current
-    ?.clear();
-
-  setMessage(
-    `${codeChanges} source ${
-      codeChanges === 1
-        ? "change"
-        : "changes"
-    } applied, covering ${findingsCovered} ${
-      findingsCovered === 1
-        ? "finding"
-        : "findings"
-    }. Now click Verify Secured Code.`,
-  );
-}
-
- async function rescanCode() {
-  if (
-    !selectedProjectId
-  ) {
-    setMessage(
-      "Select a project before verification.",
-    );
-
-    return;
-  }
-
-  /*
-   * CRITICAL FIX:
-   *
-   * Get the current content directly
-   * from Monaco.
-   *
-   * Do not rely only on editorCode
-   * because React state updates are
-   * asynchronous.
-   */
-  const codeToVerify =
-    editorRef.current
-      ?.getModel()
-      ?.getValue() ??
-    editorCode ??
-    "";
-
-  if (
-    !codeToVerify.trim()
-  ) {
-    setMessage(
-      "The editor is empty.",
-    );
-
-    return;
-  }
-
-  const normalizedCode =
-    codeToVerify.replace(
-      /\r\n/g,
-      "\n",
-    );
-
-  const verificationLines =
-    normalizedCode.split(
-      "\n",
-    );
-
-  while (
-    verificationLines.length >
-      1 &&
-    verificationLines[
-      verificationLines.length -
-        1
-    ] === ""
-  ) {
-    verificationLines.pop();
-  }
-
-  const lineCount =
-    verificationLines.length;
-
-  const byteSize =
-    new Blob([
-      normalizedCode,
-    ]).size;
-
-  if (
-    lineCount >
-    25100
-  ) {
-    setMessage(
-      `Verification blocked: secured source contains ${lineCount.toLocaleString()} lines. Backend remediation limit is 25,100 lines.`,
-    );
-
-    return;
-  }
-
-  if (
-    byteSize >
-    5 * 1024 * 1024
-  ) {
-    setMessage(
-      "Verification blocked: secured source exceeds 5 MB.",
-    );
-
-    return;
-  }
-
-  if (
-    ![
-      "python",
-      "javascript",
-      "typescript",
-      "java",
-      "c",
-      "cpp",
-      "go",
-      "php",
-      "ruby",
-      "rust",
-    ].includes(
-      editorLanguage,
-    )
-  ) {
-    setMessage(
-      `Verification blocked: "${editorLanguage}" is not a supported scanner language.`,
-    );
-
-    return;
-  }
-
-  try {
-    setRescanning(
-      true,
-    );
-
-    setMessage(
-      `Verifying ${lineCount.toLocaleString()} lines...`,
-    );
-
-    const fileName =
-      getSecuredFileName(
-        editorFileName,
-        editorLanguage,
-      );
-
-    /*
-     * Synchronize Context first.
-     */
-    setEditorCode(
-      normalizedCode,
-    );
-
-    const result =
-      await analyzePastedCode({
-        projectId:
-          selectedProjectId,
-
-        language:
-          editorLanguage,
-
-        fileName,
-
-        code:
-          normalizedCode,
-      });
-
-    if (
-      !result?.scan
-    ) {
-      throw new Error(
-        "The backend did not return a verified scan.",
-      );
-    }
-
-    setAnalysisResult(
-      result.scan,
-    );
-
-    setEditorFileName(
-      fileName,
-    );
-
-    setAfterScore(
-      result.scan
-        .securityScore ??
-        100,
-    );
-
-    refreshScans();
-
-    setSelectedIssue(
-      null,
-    );
-
-    /*
-     * IMPORTANT:
-     *
-     * Verification completed.
-     * New scan findings now decide
-     * whether Fix All becomes
-     * available again.
-     */
-    setFixesApplied(
-      false,
-    );
-
-    const remaining =
-      Array.isArray(
-        result.scan
-          ?.issues,
-      )
-        ? result.scan
-            .issues.length
-        : 0;
-
-    setMessage(
-      remaining === 0
-        ? "Verification completed. No remaining security findings."
-        : `Verification completed. ${remaining} ${
-            remaining === 1
-              ? "finding remains"
-              : "findings remain"
-          }.`,
-    );
-  } catch (error) {
-    console.error(
-      "SECURED RESCAN ERROR:",
-      error,
-    );
-
-    /*
-     * Do NOT reset fixesApplied.
-     *
-     * Code changes are still in the
-     * editor even if API verification
-     * failed.
-     */
-    setMessage(
-      error.message ||
-        "Unable to verify the secured code.",
-    );
-  } finally {
-    setRescanning(
-      false,
-    );
-  }
-}
-  function saveSecuredFile() {
-    if (
-      !editorCode.trim()
-    ) {
+    if (codeChanges === 0) {
+      setFixesApplied(true);
+      setMessage("The deterministic secure replacements are already present.");
       return;
     }
 
+    lines = addImports(lines, [...imports]);
+    const updatedCode = lines.join("\n");
+
+    if (isZipScan) {
+      await persistGuardedZipFix(updatedCode);
+      return;
+    }
+
+    const model = editorRef.current?.getModel();
+    if (model && model.getValue() !== updatedCode) {
+      model.setValue(updatedCode);
+    }
+
+    setEditorCode(updatedCode);
+    setFixesApplied(true);
+    decorationsRef.current?.clear();
+    setMessage(
+      `${codeChanges} source ${codeChanges === 1 ? "change" : "changes"} applied, covering ${findingsCovered} ${findingsCovered === 1 ? "finding" : "findings"}. Now click Verify Secured Code.`,
+    );
+  }
+
+    async function verifySecuredCode() {
+    const liveCode =
+      editorRef.current
+        ?.getModel()
+        ?.getValue() ??
+      editorCode ??
+      "";
+
+    if (!liveCode.trim()) {
+      setMessage(
+        "There is no source code to verify.",
+      );
+
+      return;
+    }
+
+    if (
+      isZipScan &&
+      !activeZipFilePath
+    ) {
+      setMessage(
+        "Select a ZIP project file before verification.",
+      );
+
+      return;
+    }
+
+    if (
+      !isZipScan &&
+      !selectedProjectId
+    ) {
+      setMessage(
+        "Select a project before verification.",
+      );
+
+      return;
+    }
+
+    setRescanning(
+      true,
+    );
+
+    setMessage(
+      isZipScan
+        ? `Verifying ${activeZipFilePath}...`
+        : "Verifying secured code...",
+    );
+
+    try {
+      if (isZipScan) {
+        const scanId =
+          analysisResult?._id;
+
+        if (!scanId) {
+          throw new Error(
+            "ZIP scan ID is missing.",
+          );
+        }
+
+        const verifiedPath =
+          activeZipFilePath;
+
+        const result =
+          await verifyZipProjectFile({
+            scanId,
+            filePath:
+              verifiedPath,
+            code:
+              liveCode,
+          });
+
+        const verifiedFile =
+          result?.file;
+
+        if (!verifiedFile) {
+          throw new Error(
+            "The backend did not return the verified ZIP project file.",
+          );
+        }
+
+        const persistedCode =
+          typeof verifiedFile.code ===
+          "string"
+            ? verifiedFile.code
+            : typeof verifiedFile.currentCode ===
+                "string"
+              ? verifiedFile.currentCode
+              : liveCode;
+
+        zipDraftsRef.current[
+          verifiedPath
+        ] = persistedCode;
+
+        setEditorCode(
+          persistedCode,
+        );
+
+        setEditorLanguage(
+          verifiedFile.language ||
+            editorLanguage,
+        );
+
+        setEditorFileName(
+          verifiedFile.path ||
+            verifiedPath,
+        );
+
+        setAnalysisResult(
+          (current) => {
+            if (
+              !current ||
+              current._id !==
+                scanId
+            ) {
+              return current;
+            }
+
+            const currentFiles =
+              Array.isArray(
+                current
+                  ?.zipMetadata
+                  ?.files,
+              )
+                ? current
+                    .zipMetadata
+                    .files
+                : [];
+
+            return {
+              ...current,
+
+              securityScore:
+                result.scan?.securityScore ??
+                current.securityScore,
+
+              issueCount:
+                result.scan?.issueCount ??
+                current.issueCount,
+
+              issues:
+                Array.isArray(
+                  result.scan?.issues,
+                )
+                  ? result.scan.issues
+                  : current.issues,
+
+              zipMetadata: {
+                ...current.zipMetadata,
+
+                files:
+                  currentFiles.map(
+                    (
+                      currentFile,
+                    ) =>
+                      currentFile.path ===
+                      verifiedPath
+                        ? {
+                            ...currentFile,
+                            ...verifiedFile,
+                            code:
+                              persistedCode,
+                          }
+                        : currentFile,
+                  ),
+              },
+            };
+          },
+        );
+
+        if (result.accepted === false) {
+          setAfterScore(
+            verifiedFile.securityScore ??
+              100,
+          );
+
+          setSelectedIssue(
+            null,
+          );
+
+          setFixesApplied(
+            false,
+          );
+
+          decorationsRef.current
+            ?.clear();
+
+          setMessage(
+            result.message ||
+              `Fix rejected for ${verifiedPath}. The last verified source was restored.`,
+          );
+
+          if (
+            typeof refreshScans ===
+            "function"
+          ) {
+            await refreshScans();
+          }
+
+          return;
+        }
+
+        setBeforeScore(
+          (current) =>
+            current ??
+            activeZipFile
+              ?.securityScore ??
+            100,
+        );
+
+        setBeforeIssues(
+          (current) =>
+            current ??
+            issues.length,
+        );
+
+        setAfterScore(
+          verifiedFile.securityScore ??
+            100,
+        );
+
+        setSelectedIssue(
+          null,
+        );
+
+        setFixesApplied(
+          false,
+        );
+
+        setMessage(
+          `Verification completed for ${verifiedPath}. Refreshing its Gemini AI review...`,
+        );
+
+        await loadZipAiReview(
+          verifiedPath,
+          true,
+        );
+
+        if (
+          currentZipFilePathRef.current ===
+          verifiedPath
+        ) {
+          setMessage(
+            `Verification and Gemini AI review completed for ${verifiedPath}.`,
+          );
+        }
+
+        if (
+          typeof refreshScans ===
+          "function"
+        ) {
+          await refreshScans();
+        }
+
+        return;
+      }
+
+      const result =
+        await analyzePastedCode({
+          projectId:
+            selectedProjectId,
+
+          language:
+            editorLanguage,
+
+          fileName:
+            editorFileName,
+
+          code:
+            liveCode,
+        });
+
+      const nextResult =
+        result.scan ||
+        result;
+
+      setAnalysisResult(
+        nextResult,
+      );
+
+      setBeforeScore(
+        (current) =>
+          current ??
+          analysisResult
+            ?.securityScore ??
+          100,
+      );
+
+      setBeforeIssues(
+        (current) =>
+          current ??
+          issues.length,
+      );
+
+      setAfterScore(
+        nextResult
+          ?.securityScore ??
+          100,
+      );
+
+      setSelectedIssue(
+        null,
+      );
+
+      setFixesApplied(
+        false,
+      );
+
+      setMessage(
+        "Secured code verification completed.",
+      );
+
+      if (
+        typeof refreshScans ===
+        "function"
+      ) {
+        await refreshScans();
+      }
+    } catch (error) {
+      setMessage(
+        error.message ||
+          "Unable to verify secured code.",
+      );
+    } finally {
+      setRescanning(
+        false,
+      );
+    }
+  }
+
+  async function handleDownloadSecuredZip() {
+    if (!isZipScan) {
+      setMessage(
+        "Secured ZIP download is only available for ZIP project scans.",
+      );
+      return;
+    }
+
+    const scanId =
+      analysisResult?._id;
+
+    if (!scanId) {
+      setMessage(
+        "ZIP scan ID is missing.",
+      );
+      return;
+    }
+
+    if (downloadingZip) {
+      return;
+    }
+
+    setDownloadingZip(true);
+    setMessage(
+      "Building secured ZIP project...",
+    );
+
+    try {
+      const result =
+        await downloadSecuredZip(
+          scanId,
+        );
+
+      setMessage(
+        `Downloaded ${result?.fileName || "project-codeguard-secured.zip"}.`,
+      );
+    } catch (error) {
+      setMessage(
+        error.message ||
+          "Unable to download the secured ZIP project.",
+      );
+    } finally {
+      setDownloadingZip(false);
+    }
+  }
+
+  async function copyCode() {
+    const liveCode =
+      editorRef.current
+        ?.getModel()
+        ?.getValue() ??
+      editorCode ??
+      "";
+
+    try {
+      await navigator.clipboard.writeText(
+        liveCode,
+      );
+
+      setCopied(
+        true,
+      );
+
+      setMessage(
+        "Secured code copied.",
+      );
+
+      window.setTimeout(
+        () =>
+          setCopied(
+            false,
+          ),
+        1400,
+      );
+    } catch {
+      setMessage(
+        "Unable to copy code.",
+      );
+    }
+  }
+
+  function saveSecuredFile() {
+    const liveCode =
+      editorRef.current
+        ?.getModel()
+        ?.getValue() ??
+      editorCode ??
+      "";
+
+    if (!liveCode) {
+      setMessage(
+        "There is no code to save.",
+      );
+
+      return;
+    }
+
+    const sourceName =
+      isZipScan
+        ? activeZipFilePath ||
+          editorFileName
+        : editorFileName;
+
     const fileName =
       getSecuredFileName(
-        editorFileName,
+        sourceName,
         editorLanguage,
       );
 
     const blob =
       new Blob(
-        [editorCode],
+        [liveCode],
         {
           type:
             getMimeType(
@@ -1802,68 +2606,64 @@ export default function CodeEditor() {
         blob,
       );
 
-    const link =
+    const anchor =
       document.createElement(
         "a",
       );
 
-    link.href =
+    anchor.href =
       url;
 
-    link.download =
+    anchor.download =
       fileName;
 
     document.body.appendChild(
-      link,
+      anchor,
     );
 
-    link.click();
+    anchor.click();
 
-    document.body.removeChild(
-      link,
+    anchor.remove();
+
+    URL.revokeObjectURL(
+      url,
     );
 
-    setTimeout(
-      () =>
-        URL.revokeObjectURL(
-          url,
-        ),
-      100,
+    setMessage(
+      `Saved ${fileName}.`,
     );
   }
 
-  async function copySecureCode() {
+  function handleEditorMount(
+    editor,
+  ) {
+    editorRef.current =
+      editor;
+
+    applyHighlights();
+  }
+
+  function handleEditorChange(
+    value,
+  ) {
+    const nextValue =
+      value ?? "";
+
+    setEditorCode(
+      nextValue,
+    );
+
     if (
-      !currentSuggestion
-        ?.code
+      isZipScan &&
+      activeZipFilePath
     ) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(
-        currentSuggestion.code,
-      );
-
-      setCopied(
-        true,
-      );
-
-      setTimeout(
-        () =>
-          setCopied(
-            false,
-          ),
-        1200,
-      );
-    } catch {
-      setMessage(
-        "Unable to copy secure code.",
-      );
+      zipDraftsRef.current[
+        activeZipFilePath
+      ] = nextValue;
     }
   }
 
-  function jumpToIssue(
+  function focusIssue(
     issue,
   ) {
     setSelectedIssue(
@@ -1875,727 +2675,765 @@ export default function CodeEditor() {
 
     const line =
       Number(
-        issue.line,
+        issue?.line,
       );
 
     if (
-      editor &&
-      Number.isInteger(
+      !editor ||
+      !Number.isInteger(
         line,
-      )
+      ) ||
+      line < 1
     ) {
-      editor.revealLineInCenter(
-        line,
-      );
-
-      editor.setPosition({
-        lineNumber:
-          line,
-
-        column:
-          1,
-      });
-
-      editor.focus();
+      return;
     }
-  }
 
-  function handleLanguageChange(
-    event,
-  ) {
-    const language =
-      event.target.value;
-
-    setEditorLanguage(
-      language,
+    editor.revealLineInCenter(
+      line,
     );
 
-    const extension =
-      extensionByLanguage[
-        language
-      ] || "txt";
+    editor.setPosition({
+      lineNumber:
+        line,
 
-    const base =
-      String(
-        editorFileName ||
-          "source-code",
-      )
-        .replace(
-          /\.[^.]+$/,
-          "",
-        )
-        .replace(
-          /-codeguard-secured$/i,
-          "",
-        );
+      column: 1,
+    });
 
-    setEditorFileName(
-      `${base}.${extension}`,
-    );
+    editor.focus();
   }
 
-  const currentIssues =
-    issues.length;
+  const displayedSecurityScore =
+    isZipScan
+      ? activeZipFile
+          ?.securityScore ??
+        100
+      : analysisResult
+          ?.securityScore ??
+        100;
 
-  const fixed =
-    beforeIssues ===
-    null
-      ? 0
-      : Math.max(
-          0,
+  const aiReview =
+    analysisResult
+      ?.aiReview;
 
-          beforeIssues -
-            currentIssues,
-        );
+  const aiDetailedFindings =
+    Array.isArray(
+      aiReview
+        ?.detailedFindings,
+    )
+      ? aiReview
+          .detailedFindings
+      : [];
 
-  const improvement =
-    beforeScore !==
-      null &&
-    afterScore !==
-      null
-      ? afterScore -
-        beforeScore
-      : null;
+  const aiPriorityActions =
+    Array.isArray(
+      aiReview
+        ?.priorityActions,
+    )
+      ? aiReview
+          .priorityActions
+      : [];
 
-  const isLight =
-    theme ===
-    "light";
+  const aiQualitySuggestions =
+    Array.isArray(
+      aiReview
+        ?.codeQualitySuggestions,
+    )
+      ? aiReview
+          .codeQualitySuggestions
+      : [];
+
+  const aiChecklist =
+    Array.isArray(
+      aiReview
+        ?.finalChecklist,
+    )
+      ? aiReview
+          .finalChecklist
+      : [];
+
+  const displayedFileName =
+    isZipScan
+      ? activeZipFilePath ||
+        "Select a project file"
+      : editorFileName ||
+        "source-code";
+
+  const verificationLabel =
+    isZipScan
+      ? "Verify Project File"
+      : "Verify Secured Code";
+
+  const verificationBusyLabel =
+    isZipScan
+      ? "Verifying File..."
+      : "Verifying...";
 
   return (
-    <div
-      className={`editor-card ${
-        isLight
-          ? "editor-light"
-          : "editor-dark"
-      }`}
-    >
-      <div className="editor-header">
-        <div className="editor-title-group">
-          <h2>
-            Code Editor
+    <section className="code-editor">
+      <div className="code-editor__topbar">
+        <div className="code-editor__identity">
+          <div className="code-editor__eyebrow">
+            Secure Remediation
+          </div>
+
+          <h2 className="code-editor__title">
+            Security Workspace
           </h2>
 
-          <p>
-            {editorFileName ||
-              "Paste or write code"}
+          <p className="code-editor__subtitle">
+            Review deterministic findings,
+            apply safe remediations,
+            verify the secured source,
+            and inspect Gemini security
+            guidance for the active file.
           </p>
         </div>
 
-        <div className="editor-header-actions">
-          {issues.length >
-            0 && (
-            <span className="editor-issue-count">
-              {
-                issues.length
-              }{" "}
-              {issues.length ===
-              1
-                ? "finding"
-                : "findings"}
-            </span>
-          )}
+        <div className="code-editor__score-card">
+          <span className="code-editor__score-label">
+            Security Score
+          </span>
 
-          <button
-  type="button"
-  className={`fix-all-button ${
-    fixesApplied
-      ? "fixes-applied"
-      : ""
-  }`}
-  onClick={
-    fixAllSafeIssues
-  }
-  disabled={
-    safeCodeChanges ===
-      0 ||
-    fixesApplied
-  }
->
-  <span>
-    {fixesApplied
-      ? "✓"
-      : "✨"}
-  </span>
+          <strong className="code-editor__score-value">
+            {displayedSecurityScore}
+          </strong>
 
-  <div>
-    <strong>
-      {fixesApplied
-        ? "Safe Fixes Applied"
-        : "Fix All Safe Issues"}
-    </strong>
-
-    <small>
-      {fixesApplied
-        ? "Verify the secured code now"
-        : safeCodeChanges ===
-            0
-          ? "No deterministic changes available"
-          : `${safeCodeChanges} safe ${
-              safeCodeChanges ===
-              1
-                ? "change"
-                : "changes"
-            } • covers ${safeFindingsCovered} ${
-              safeFindingsCovered ===
-              1
-                ? "finding"
-                : "findings"
-            }`}
-    </small>
-  </div>
-</button>
-
-          <select
-            value={
-              editorLanguage
-            }
-            onChange={
-              handleLanguageChange
-            }
-          >
-            {LANGUAGE_OPTIONS.map(
-              (item) => (
-                <option
-                  key={
-                    item.value
-                  }
-                  value={
-                    item.value
-                  }
-                >
-                  {
-                    item.label
-                  }
-                </option>
-              ),
-            )}
-          </select>
+          <span className="code-editor__score-max">
+            /100
+          </span>
         </div>
       </div>
 
-      <div className="editor-security-hint">
-        <span className="editor-hint-dot" />
-
-        {issues.length >
-        0
-          ? "Vulnerable lines are highlighted. Use the remediation workspace below to review and fix them."
-          : "No active findings are loaded for the current code."}
-      </div>
-
-      <div className="monaco-editor-shell">
-        <Editor
-          height="100%"
-          theme={
-            isLight
-              ? "vs"
-              : "vs-dark"
-          }
-          language={
-            editorLanguage
-          }
-          value={
-            editorCode
-          }
-          onMount={(
-            editor,
-          ) => {
-            editorRef.current =
-              editor;
-
-            applyHighlights();
-          }}
-          onChange={(
-            value,
-          ) =>
-            setEditorCode(
-              value || "",
-            )
-          }
-          options={{
-            automaticLayout:
-              true,
-
-            minimap: {
-              enabled:
-                false,
-            },
-
-            fontSize:
-              14,
-
-            lineHeight:
-              22,
-
-            lineNumbers:
-              "on",
-
-            glyphMargin:
-              true,
-
-            wordWrap:
-              "on",
-
-            smoothScrolling:
-              true,
-
-            scrollBeyondLastLine:
-              false,
-
-            padding: {
-              top:
-                14,
-
-              bottom:
-                14,
-            },
-          }}
-        />
-      </div>
-
-      {(issues.length >
-        0 ||
-        beforeScore !==
-          null) && (
-        <section className="remediation-workspace">
-          <div className="remediation-main-header">
-            <div>
-              <span className="remediation-eyebrow">
-                SECURITY REMEDIATION
-              </span>
-
-              <h3>
-                Improve this code safely
-              </h3>
-
-              <p>
-                Automatic fixes are only applied where CodeGuard can make a deterministic replacement.
-              </p>
-            </div>
-
-            <span className="remediation-status">
-              {currentIssues ===
-              0
-                ? "✓ Verified clean"
-                : `${currentIssues} remaining`}
+      {isZipScan && (
+        <div className="code-editor__zip-bar">
+          <div className="code-editor__zip-info">
+            <span className="code-editor__zip-label">
+              ZIP Project
             </span>
+
+            <strong>
+              {analysisResult
+                ?.zipMetadata
+                ?.archiveName ||
+                "Project archive"}
+            </strong>
           </div>
 
-          <div className="remediation-actions">
-            <button
-              type="button"
-              className="fix-all-button"
-              onClick={
-                fixAllSafeIssues
+          <label className="code-editor__zip-select-wrap">
+            <span>
+              Active source file
+            </span>
+
+            <select
+              className="code-editor__zip-select"
+              value={
+                activeZipFilePath
+              }
+              onChange={
+                handleZipFileChange
               }
               disabled={
-                safeCodeChanges ===
-                0
+                rescanning ||
+                !zipFiles.length
               }
             >
+              {!activeZipFilePath && (
+                <option value="">
+                  Select source file
+                </option>
+              )}
+
+              {zipFiles.map(
+                (file) => (
+                  <option
+                    key={
+                      file.path
+                    }
+                    value={
+                      file.path
+                    }
+                  >
+                    {file.path}
+                    {" • "}
+                    {file.issueTotal ??
+                      0}
+                    {" "}
+                    findings
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+        </div>
+      )}
+
+      <div className="code-editor__toolbar">
+        <div className="code-editor__file-block">
+          <span className="code-editor__file-label">
+            Active file
+          </span>
+
+          <strong className="code-editor__file-name">
+            {displayedFileName}
+          </strong>
+        </div>
+
+        <div className="code-editor__toolbar-actions">
+          {!isZipScan && (
+            <label className="code-editor__language-control">
               <span>
-                ✨
+                Language
               </span>
 
-              <div>
-                <strong>
-                  Fix All Safe Issues
-                </strong>
-
-                <small>
-                  {
-                    safeCodeChanges
-                  }{" "}
-                  {safeCodeChanges ===
-                  1
-                    ? "safe code change"
-                    : "safe code changes"}
-
-                  {safeFindingsCovered >
-                    safeCodeChanges && (
-                    <>
-                      {" "}
-                      • covers{" "}
+              <select
+                value={
+                  editorLanguage
+                }
+                onChange={(
+                  event,
+                ) =>
+                  setEditorLanguage(
+                    event
+                      .target
+                      .value,
+                  )
+                }
+                disabled={
+                  rescanning
+                }
+              >
+                {LANGUAGE_OPTIONS.map(
+                  (
+                    option,
+                  ) => (
+                    <option
+                      key={
+                        option.value
+                      }
+                      value={
+                        option.value
+                      }
+                    >
                       {
-                        safeFindingsCovered
-                      }{" "}
-                      findings
-                    </>
-                  )}
-                </small>
-              </div>
-            </button>
+                        option.label
+                      }
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+          )}
 
+          <button
+            type="button"
+            className="code-editor__secondary-button"
+            onClick={
+              copyCode
+            }
+            disabled={
+              !editorCode
+            }
+          >
+            {copied
+              ? "Copied"
+              : "Copy Code"}
+          </button>
+
+          <button
+            type="button"
+            className="code-editor__secondary-button"
+            onClick={
+              saveSecuredFile
+            }
+            disabled={
+              !editorCode
+            }
+          >
+            Save Secured File
+          </button>
+
+          {isZipScan && (
             <button
               type="button"
-              className="rescan-button"
+              className="code-editor__secondary-button"
               onClick={
-                rescanCode
+                handleDownloadSecuredZip
               }
               disabled={
+                downloadingZip ||
                 rescanning
               }
             >
-              <span>
-                {rescanning
-                  ? "⏳"
-                  : "🔍"}
+              {downloadingZip
+                ? "Building ZIP..."
+                : "Download Secured ZIP"}
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="code-editor__verify-button"
+            onClick={
+              verifySecuredCode
+            }
+            disabled={
+              rescanning ||
+              !editorCode ||
+              (isZipScan &&
+                !activeZipFilePath)
+            }
+          >
+            {rescanning
+              ? verificationBusyLabel
+              : verificationLabel}
+          </button>
+        </div>
+      </div>
+
+      {message && (
+        <div className="code-editor__message">
+          {message}
+        </div>
+      )}
+
+      <div className="code-editor__workspace">
+        <div className="code-editor__editor-panel">
+          <div className="code-editor__panel-header">
+            <div>
+              <span className="code-editor__panel-kicker">
+                Source
               </span>
 
-              <div>
-                <strong>
-                  {rescanning
-                    ? "Scanning..."
-                    : "Verify Secured Code"}
-                </strong>
+              <h3>
+                Secured Code Editor
+              </h3>
+            </div>
 
-                <small>
-                  Run a fresh security analysis
-                </small>
-              </div>
-            </button>
+            <span className="code-editor__language-badge">
+              {editorLanguage}
+            </span>
           </div>
 
-          {message && (
-            <div className="remediation-message">
-              <span>
-                ℹ
+          <div className="code-editor__monaco">
+            <Editor
+              height="620px"
+              language={
+                editorLanguage
+              }
+              value={
+                editorCode || ""
+              }
+              theme={
+                theme ===
+                "light"
+                  ? "vs"
+                  : "vs-dark"
+              }
+              onMount={
+                handleEditorMount
+              }
+              onChange={
+                handleEditorChange
+              }
+              options={{
+                minimap: {
+                  enabled:
+                    false,
+                },
+
+                fontSize: 14,
+
+                lineHeight: 23,
+
+                scrollBeyondLastLine:
+                  false,
+
+                automaticLayout:
+                  true,
+
+                wordWrap:
+                  "on",
+
+                tabSize: 2,
+
+                insertSpaces:
+                  true,
+
+                renderWhitespace:
+                  "selection",
+
+                padding: {
+                  top: 16,
+                  bottom: 16,
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        <aside className="code-editor__findings-panel">
+          <div className="code-editor__panel-header">
+            <div>
+              <span className="code-editor__panel-kicker">
+                Deterministic Scan
               </span>
 
-              {message}
+              <h3>
+                Security Findings
+              </h3>
             </div>
-          )}
 
-          {beforeScore !==
-            null && (
-            <div className="improvement-section">
-              <div className="section-title-row">
-                <div>
-                  <span className="section-eyebrow">
-                    RESULTS
-                  </span>
+            <span className="code-editor__count-badge">
+              {issues.length}
+            </span>
+          </div>
 
-                  <h4>
-                    Security Improvement
-                  </h4>
-                </div>
+          {issues.length ===
+          0 ? (
+            <div className="code-editor__empty-state">
+              <strong>
+                No active findings
+              </strong>
 
-                {improvement !==
-                  null && (
-                  <span
-                    className={`improvement-badge ${
-                      improvement >=
-                      0
-                        ? "positive"
-                        : "negative"
-                    }`}
-                  >
-                    {improvement >=
-                    0
-                      ? "+"
-                      : ""}
-
-                    {
-                      improvement
-                    }{" "}
-                    points
-                  </span>
-                )}
-              </div>
-
-              <div className="security-score-comparison">
-                <div className="comparison-stat">
-                  <span>
-                    Original Score
-                  </span>
-
-                  <strong>
-                    {
-                      beforeScore
-                    }
-                  </strong>
-                </div>
-
-                <div className="comparison-arrow">
-                  →
-                </div>
-
-                <div className="comparison-stat after">
-                  <span>
-                    Verified Score
-                  </span>
-
-                  <strong>
-                    {afterScore ??
-                      "—"}
-                  </strong>
-                </div>
-
-                <div className="comparison-stat">
-                  <span>
-                    Fixed
-                  </span>
-
-                  <strong>
-                    {
-                      fixed
-                    }
-                  </strong>
-                </div>
-
-                <div className="comparison-stat">
-                  <span>
-                    Remaining
-                  </span>
-
-                  <strong>
-                    {
-                      currentIssues
-                    }
-                  </strong>
-                </div>
-              </div>
+              <span>
+                {isZipScan
+                  ? "This project file currently has no deterministic findings."
+                  : "The current scan has no deterministic findings."}
+              </span>
             </div>
-          )}
-
-          {issues.length >
-            0 && (
-            <div className="remaining-findings-section">
-              <div className="section-title-row">
-                <div>
-                  <span className="section-eyebrow">
-                    FINDINGS
-                  </span>
-
-                  <h4>
-                    Remaining Security Findings
-                  </h4>
-                </div>
-
-                <span className="manual-count">
-                  {
-                    issues.filter(
-                      (
-                        issue,
-                      ) => {
-                        const entry =
-                          suggestions.find(
-                            (
-                              item,
-                            ) =>
-                              item.issue ===
-                              issue,
-                          );
-
-                        return !entry
-                          ?.suggestion
-                          .autoApplicable;
-                      },
-                    ).length
-                  }{" "}
-                  need manual review
-                </span>
-              </div>
-
-              <div className="findings-list">
-                {issues.map(
-                  (
-                    issue,
-                    index,
-                  ) => {
-                    const severity =
-                      getSeverity(
-                        issue.severity,
-                      );
-
-                    const suggestion =
-                      suggestions.find(
-                        (
-                          item,
-                        ) =>
-                          item.issue ===
-                          issue,
-                      )
-                        ?.suggestion;
-
-                    return (
-                      <button
-                        type="button"
-                        className={`finding-select-card ${
-                          selectedIssue ===
-                          issue
-                            ? "selected"
-                            : ""
-                        }`}
-                        key={`${issue.ruleId}-${issue.line}-${index}`}
-                        onClick={() =>
-                          jumpToIssue(
-                            issue,
-                          )
-                        }
-                      >
-                        <span
-                          className={`finding-indicator ${severity}`}
-                        />
-
-                        <div className="finding-card-content">
-                          <strong>
-                            {
-                              issue.title
-                            }
-                          </strong>
-
-                          <span>
-                            Line{" "}
-                            {
-                              issue.line
-                            }
-                            {" • "}
-                            {severity.toUpperCase()}
-                          </span>
-                        </div>
-
-                        <span
-                          className={
-                            suggestion
-                              ?.autoApplicable
-                              ? "fix-type automatic"
-                              : "fix-type manual"
-                          }
-                        >
-                          {suggestion
-                            ?.autoApplicable
-                            ? "Auto fix"
-                            : "Manual review"}
-                        </span>
-
-                        <span className="finding-chevron">
-                          ›
-                        </span>
-                      </button>
+          ) : (
+            <div className="code-editor__finding-list">
+              {issues.map(
+                (
+                  issue,
+                  index,
+                ) => {
+                  const severity =
+                    getSeverity(
+                      issue.severity,
                     );
-                  },
-                )}
-              </div>
+
+                  const selected =
+                    issue ===
+                    selectedIssue;
+
+                  return (
+                    <button
+                      type="button"
+                      key={`${issue.ruleId || issue.title}-${issue.line}-${index}`}
+                      className={`code-editor__finding-card ${
+                        selected
+                          ? "is-selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        focusIssue(
+                          issue,
+                        )
+                      }
+                    >
+                      <div className="code-editor__finding-top">
+                        <span
+                          className={`code-editor__severity code-editor__severity--${severity}`}
+                        >
+                          {severity}
+                        </span>
+
+                        <span className="code-editor__line-number">
+                          Line{" "}
+                          {issue.line ||
+                            "—"}
+                        </span>
+                      </div>
+
+                      <strong className="code-editor__finding-title">
+                        {issue.title ||
+                          "Security finding"}
+                      </strong>
+
+                      <span className="code-editor__finding-description">
+                        {issue.description ||
+                          issue.recommendation ||
+                          "Review this security finding."}
+                      </span>
+                    </button>
+                  );
+                },
+              )}
             </div>
           )}
+        </aside>
+      </div>
 
-          {selectedIssue &&
-            currentSuggestion && (
-            <div className="selected-finding-section">
-              <div className="selected-finding-header">
-                <div>
-                  <span className="section-eyebrow">
-                    SELECTED FINDING
+      <div className="code-editor__remediation-grid">
+        <div className="code-editor__remediation-card">
+          <div className="code-editor__panel-header">
+            <div>
+              <span className="code-editor__panel-kicker">
+                Secure Fix
+              </span>
+
+              <h3>
+                Selected Finding
+              </h3>
+            </div>
+          </div>
+
+          {selectedIssue ? (
+            <>
+              <div className="code-editor__selected-finding">
+                <div className="code-editor__selected-heading">
+                  <span
+                    className={`code-editor__severity code-editor__severity--${getSeverity(
+                      selectedIssue
+                        .severity,
+                    )}`}
+                  >
+                    {getSeverity(
+                      selectedIssue
+                        .severity,
+                    )}
                   </span>
 
-                  <h4>
-                    {
-                      selectedIssue.title
-                    }
-                  </h4>
-
-                  <p>
-                    Line{" "}
-                    {
-                      selectedIssue.line
-                    }
-                    {" • "}
-                    {formatOwasp(
-                      selectedIssue.owasp,
-                    )}
-                    {" • "}
-                    {selectedIssue.cwe ||
-                      "No CWE"}
-                  </p>
+                  <strong>
+                    {selectedIssue.title}
+                  </strong>
                 </div>
-
-                <span
-                  className={`selected-severity ${getSeverity(
-                    selectedIssue.severity,
-                  )}`}
-                >
-                  {getSeverity(
-                    selectedIssue.severity,
-                  ).toUpperCase()}
-                </span>
-              </div>
-
-              <div className="finding-explanation">
-                <strong>
-                  Why this matters
-                </strong>
 
                 <p>
-                  {
-                    currentSuggestion.explanation
-                  }
+                  {selectedIssue.description ||
+                    "Security review required."}
+                </p>
+
+                <div className="code-editor__metadata-grid">
+                  <div>
+                    <span>
+                      Line
+                    </span>
+
+                    <strong>
+                      {selectedIssue.line ||
+                        "—"}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      CWE
+                    </span>
+
+                    <strong>
+                      {selectedIssue.cwe ||
+                        "N/A"}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      OWASP
+                    </span>
+
+                    <strong>
+                      {formatOwasp(
+                        selectedIssue.owasp,
+                      )}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="code-editor__recommendation">
+                <span>
+                  Recommendation
+                </span>
+
+                <p>
+                  {selectedIssue.recommendation ||
+                    currentSuggestion
+                      ?.explanation ||
+                    "Review the surrounding application logic before changing this code."}
                 </p>
               </div>
 
-              <div className="secure-code-block">
-                <div className="secure-code-header">
-                  <div>
-                    <span>
-                      ✓
-                    </span>
+              {currentSuggestion && (
+                <div className="code-editor__secure-preview">
+                  <span>
+                    Secure replacement
+                  </span>
 
-                    Suggested secure replacement
-                  </div>
+                  <pre>
+                    <code>
+                      {
+                        currentSuggestion.code
+                      }
+                    </code>
+                  </pre>
 
-                  <button
-                    type="button"
-                    onClick={
-                      copySecureCode
-                    }
-                  >
-                    {copied
-                      ? "✓ Copied"
-                      : "Copy"}
-                  </button>
-                </div>
-
-                <pre>
-                  <code>
+                  <p>
                     {
-                      currentSuggestion.code
+                      currentSuggestion.explanation
                     }
-                  </code>
-                </pre>
-              </div>
+                  </p>
+                </div>
+              )}
 
-              <div className="selected-finding-actions">
-                {currentSuggestion.autoApplicable ? (
-                  <button
-                    type="button"
-                    className="single-fix-button"
-                    onClick={
-                      applySingleFix
-                    }
-                  >
-                    ✨ Apply Secure Fix
-                  </button>
-                ) : (
-                  <div className="manual-review-notice">
-                    <span>
-                      ⚠
-                    </span>
+              <button
+                type="button"
+                className="code-editor__apply-button"
+                onClick={
+                  applySingleFix
+                }
+                disabled={
+                  !currentSuggestion
+                    ?.autoApplicable
+                }
+              >
+                {currentSuggestion
+                  ?.autoApplicable
+                  ? "Apply Secure Fix"
+                  : "Manual Review Required"}
+              </button>
+            </>
+          ) : (
+            <div className="code-editor__empty-state">
+              <strong>
+                Select a finding
+              </strong>
 
-                    <div>
-                      <strong>
-                        Manual review required
-                      </strong>
-
-                      <p>
-                        This issue depends on surrounding application logic, so CodeGuard will not modify it automatically.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <span>
+                Choose a deterministic
+                finding to inspect its
+                remediation.
+              </span>
             </div>
           )}
+        </div>
+
+        <div className="code-editor__remediation-card">
+          <div className="code-editor__panel-header">
+            <div>
+              <span className="code-editor__panel-kicker">
+                Automated Remediation
+              </span>
+
+              <h3>
+                Safe Fixes
+              </h3>
+            </div>
+          </div>
+
+          <div className="code-editor__safe-fix-stats">
+            <div>
+              <strong>
+                {safeCodeChanges}
+              </strong>
+
+              <span>
+                source changes
+              </span>
+            </div>
+
+            <div>
+              <strong>
+                {safeFindingsCovered}
+              </strong>
+
+              <span>
+                findings covered
+              </span>
+            </div>
+          </div>
+
+          <p className="code-editor__safe-fix-copy">
+            CodeGuard only applies
+            deterministic replacements
+            where the scanner can safely
+            transform the affected line.
+            Context-sensitive findings
+            remain manual.
+          </p>
+
+          <button
+            type="button"
+            className="code-editor__apply-all-button"
+            onClick={
+              fixAllSafeIssues
+            }
+            disabled={
+              safeCodeChanges ===
+                0 &&
+              !fixesApplied
+            }
+          >
+            {fixesApplied
+              ? "Safe Fixes Applied"
+              : `Fix All Safe Issues (${safeCodeChanges})`}
+          </button>
+        </div>
+      </div>
+
+      {(beforeScore !== null ||
+        afterScore !== null) && (
+        <section className="code-editor__comparison">
+          <div className="code-editor__panel-header">
+            <div>
+              <span className="code-editor__panel-kicker">
+                Verification
+              </span>
+
+              <h3>
+                Security Improvement
+              </h3>
+            </div>
+          </div>
+
+          <div className="code-editor__comparison-grid">
+            <div className="code-editor__comparison-card">
+              <span>
+                Before Score
+              </span>
+
+              <strong>
+                {beforeScore ??
+                  "—"}
+              </strong>
+            </div>
+
+            <div className="code-editor__comparison-card">
+              <span>
+                After Score
+              </span>
+
+              <strong>
+                {afterScore ??
+                  displayedSecurityScore}
+              </strong>
+            </div>
+
+            <div className="code-editor__comparison-card">
+              <span>
+                Findings Before
+              </span>
+
+              <strong>
+                {beforeIssues ??
+                  "—"}
+              </strong>
+            </div>
+
+            <div className="code-editor__comparison-card">
+              <span>
+                Findings Now
+              </span>
+
+              <strong>
+                {issues.length}
+              </strong>
+            </div>
+          </div>
         </section>
       )}
-    </div>
+
+    </section>
   );
 }

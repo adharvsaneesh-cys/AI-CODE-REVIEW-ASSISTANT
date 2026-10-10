@@ -4,132 +4,86 @@ import {
   useRef,
   useState,
 } from "react";
-
 import {
   FaCloudUploadAlt,
   FaFileCode,
 } from "react-icons/fa";
-
 import {
   AnalysisContext,
 } from "../../context/analysis-context";
-
 import {
   analyzePastedCode,
+  analyzeZipProject,
 } from "../../services/scan";
-
 import {
   getProjects,
   createProject,
 } from "../../services/projects";
-
 import {
   getSettings,
 } from "../../services/settings";
-
 import {
   addNotification,
 } from "../../services/notifications";
-
 import "./Upload.css";
 
-const MAX_FILE_SIZE =
-  5 * 1024 * 1024;
-
-const MAX_CODE_LINES =
-  25000;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_CODE_LINES = 25100;
+const MAX_ZIP_SIZE = 1024 * 1024 * 1024;
 
 const languageByExtension = {
   py: "python",
-
   js: "javascript",
-
   jsx: "javascript",
-
   ts: "typescript",
-
   tsx: "typescript",
-
   java: "java",
-
   c: "c",
-
   cpp: "cpp",
-
   cc: "cpp",
-
   h: "c",
-
   hpp: "cpp",
-
   go: "go",
-
   php: "php",
-
   rb: "ruby",
-
   rs: "rust",
 };
 
 const extensionByLanguage = {
   python: "py",
-
   javascript: "js",
-
   typescript: "ts",
-
   java: "java",
-
   c: "c",
-
   cpp: "cpp",
-
   go: "go",
-
   php: "php",
-
   ruby: "rb",
-
   rust: "rs",
 };
 
-function countLines(
-  code = "",
-) {
-  const text =
-    String(code || "");
+function countLines(code = "") {
+  const text = String(code || "");
 
   if (!text) {
     return 0;
   }
 
-  const lines =
-    text.split(
-      /\r?\n/,
-    );
+  const lines = text.split(/\r?\n/);
 
   if (
     lines.length > 1 &&
-    lines[
-      lines.length - 1
-    ] === ""
+    lines[lines.length - 1] === ""
   ) {
-    return (
-      lines.length - 1
-    );
+    return lines.length - 1;
   }
 
   return lines.length;
 }
 
-function detectLanguage(
-  fileName,
-) {
+function detectLanguage(fileName) {
   return languageByExtension[
-    fileName
-      .split(".")
-      .pop()
-      ?.toLowerCase()
+    fileName.split(".").pop()?.toLowerCase()
   ];
 }
 
@@ -165,36 +119,76 @@ function detectLanguageFromCode(code = "") {
   add("python", /\bprint\s*\(/, 1);
   add("python", /\bNone\b|\bTrue\b|\bFalse\b/, 1);
 
-  add("javascript", /\b(const|let|var)\s+[A-Za-z_$][\w$]*/, 3);
-  add("javascript", /\b(require\s*\(|module\.exports|process\.env)\b/, 4);
-  add("javascript", /\bconsole\.(log|error|warn)\s*\(/, 3);
+  add(
+    "javascript",
+    /\b(const|let|var)\s+[A-Za-z_$][\w$]*/,
+    3
+  );
+  add(
+    "javascript",
+    /\b(require\s*\(|module\.exports|process\.env)\b/,
+    4
+  );
+  add(
+    "javascript",
+    /\bconsole\.(log|error|warn)\s*\(/,
+    3
+  );
   add("javascript", /=>/, 2);
-  add("javascript", /\bfunction\s+\w+\s*\(/, 2);
+  add(
+    "javascript",
+    /\bfunction\s+\w+\s*\(/,
+    2
+  );
 
-  add("typescript", /\b(interface|type|enum|namespace)\s+\w+/, 5);
+  add(
+    "typescript",
+    /\b(interface|type|enum|namespace)\s+\w+/,
+    5
+  );
   add(
     "typescript",
     /\b(const|let|var)\s+\w+\s*:\s*(string|number|boolean|unknown|any)\b/,
-    4,
+    4
   );
 
   add("java", /\bpublic\s+class\s+\w+/, 5);
-  add("java", /\bSystem\.out\.println\s*\(/, 4);
-  add("java", /\bpublic\s+static\s+void\s+main\s*\(/, 5);
+  add(
+    "java",
+    /\bSystem\.out\.println\s*\(/,
+    4
+  );
+  add(
+    "java",
+    /\bpublic\s+static\s+void\s+main\s*\(/,
+    5
+  );
   add("java", /^\s*import\s+java\./m, 3);
 
   add("cpp", /#include\s*<iostream>/, 5);
   add("cpp", /\bstd::/, 4);
   add("cpp", /\bcout\s*<</, 4);
-  add("cpp", /\busing\s+namespace\s+std\b/, 3);
+  add(
+    "cpp",
+    /\busing\s+namespace\s+std\b/,
+    3
+  );
 
   add("c", /#include\s*<stdio\.h>/, 5);
   add("c", /\bprintf\s*\(/, 3);
   add("c", /\bscanf\s*\(/, 3);
 
   add("go", /^\s*package\s+\w+/m, 5);
-  add("go", /^\s*func\s+\w+\s*\(/m, 4);
-  add("go", /\bfmt\.(Print|Println|Printf)\s*\(/, 3);
+  add(
+    "go",
+    /^\s*func\s+\w+\s*\(/m,
+    4
+  );
+  add(
+    "go",
+    /\bfmt\.(Print|Println|Printf)\s*\(/,
+    3
+  );
 
   add("php", /<\?php/, 6);
   add("php", /\$\w+\s*=/, 3);
@@ -203,13 +197,25 @@ function detectLanguageFromCode(code = "") {
   add("ruby", /\bputs\s+/, 2);
   add("ruby", /^\s*require\s+["']/m, 3);
 
-  add("rust", /^\s*fn\s+\w+\s*\(/m, 4);
-  add("rust", /\bprintln!\s*\(/, 4);
-  add("rust", /^\s*use\s+[\w:]+/m, 3);
+  add(
+    "rust",
+    /^\s*fn\s+\w+\s*\(/m,
+    4
+  );
+  add(
+    "rust",
+    /\bprintln!\s*\(/,
+    4
+  );
+  add(
+    "rust",
+    /^\s*use\s+[\w:]+/m,
+    3
+  );
 
   const [bestLanguage, bestScore] =
     Object.entries(scores).sort(
-      (a, b) => b[1] - a[1],
+      (a, b) => b[1] - a[1]
     )[0];
 
   return bestScore >= 2
@@ -217,13 +223,9 @@ function detectLanguageFromCode(code = "") {
     : null;
 }
 
-function createPasteFileName(
-  language,
-) {
+function createPasteFileName(language) {
   const extension =
-    extensionByLanguage[
-      language
-    ] || "txt";
+    extensionByLanguage[language] || "txt";
 
   return `pasted-code.${extension}`;
 }
@@ -231,140 +233,104 @@ function createPasteFileName(
 export default function UploadCard() {
   const {
     setAnalysisResult,
-
     selectedProjectId,
-
     setSelectedProjectId,
-
     refreshScans,
-
     editorCode,
-
     setEditorCode,
-
     editorLanguage,
-
     setEditorLanguage,
-
     editorFileName,
-
     setEditorFileName,
-  } = useContext(
-    AnalysisContext,
-  );
+  } = useContext(AnalysisContext);
 
-  const fileInput =
-    useRef(null);
+  const fileInput = useRef(null);
+  const zipInput = useRef(null);
 
-  const [
-    selectedFile,
-    setSelectedFile,
-  ] = useState(null);
+  const [selectedFile, setSelectedFile] =
+    useState(null);
 
-  const [
-    projects,
-    setProjects,
-  ] = useState([]);
+  const [selectedZip, setSelectedZip] =
+    useState(null);
 
-  const [
-    projectId,
-    setProjectId,
-  ] = useState("");
+  const [uploadMode, setUploadMode] =
+    useState("source");
 
-  const [
-    projectsLoading,
-    setProjectsLoading,
-  ] = useState(true);
+  const [projects, setProjects] =
+    useState([]);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
+  const [projectId, setProjectId] =
+    useState("");
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [projectsLoading, setProjectsLoading] =
+    useState(true);
 
-  const [
-    success,
-    setSuccess,
-  ] = useState("");
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [geminiReviewMode, setGeminiReviewMode] =
+    useState("findings");
 
   useEffect(() => {
-    let cancelled =
-      false;
+    let cancelled = false;
 
     async function loadProjects() {
       try {
-        setProjectsLoading(
-          true,
-        );
-
+        setProjectsLoading(true);
         setError("");
 
-        let projectList =
-          await getProjects();
+        let projectList = await getProjects();
 
         if (cancelled) {
           return;
         }
 
-        if (
-          projectList.length ===
-          0
-        ) {
+        if (projectList.length === 0) {
           const newProject =
             await createProject({
               name:
                 "CodeGuard Universal Scanner",
-
               description:
                 "Default project for source-code security analysis",
-
               primaryLanguage:
                 "Multi-language",
-
-              sourceType:
-                "paste",
+              sourceType: "paste",
             });
 
-          projectList = [
-            newProject,
-          ];
+          projectList = [newProject];
         }
 
         if (cancelled) {
           return;
         }
 
-        setProjects(
-          projectList,
-        );
+        setProjects(projectList);
 
-        const settings =
-          getSettings();
+        const settings = getSettings();
 
         const storedProjectId =
-          settings
-            .rememberLastProject
+          settings.rememberLastProject
             ? localStorage.getItem(
-                "selectedProjectId",
+                "selectedProjectId"
               )
             : null;
 
         const storedExists =
           projectList.some(
             (project) =>
-              project._id ===
-              storedProjectId,
+              project._id === storedProjectId
           );
 
         const selectedExists =
           projectList.some(
             (project) =>
-              project._id ===
-              selectedProjectId,
+              project._id === selectedProjectId
           );
 
         const preferredId =
@@ -372,43 +338,30 @@ export default function UploadCard() {
             ? storedProjectId
             : selectedExists
               ? selectedProjectId
-              : projectList[
-                  0
-                ]?._id ||
-                "";
+              : projectList[0]?._id || "";
 
-        setProjectId(
-          preferredId,
-        );
-
-        setSelectedProjectId(
-          preferredId,
-        );
+        setProjectId(preferredId);
+        setSelectedProjectId(preferredId);
 
         if (
-          settings
-            .rememberLastProject &&
+          settings.rememberLastProject &&
           preferredId
         ) {
           localStorage.setItem(
             "selectedProjectId",
-            preferredId,
+            preferredId
           );
         }
-      } catch (
-        loadError
-      ) {
+      } catch (loadError) {
         if (!cancelled) {
           setError(
             loadError.message ||
-              "Unable to load projects.",
+              "Unable to load projects."
           );
         }
       } finally {
         if (!cancelled) {
-          setProjectsLoading(
-            false,
-          );
+          setProjectsLoading(false);
         }
       }
     }
@@ -416,8 +369,7 @@ export default function UploadCard() {
     loadProjects();
 
     return () => {
-      cancelled =
-        true;
+      cancelled = true;
     };
   }, []);
 
@@ -427,464 +379,534 @@ export default function UploadCard() {
     fileName,
   }) {
     setError("");
-
     setSuccess("");
 
     if (!projectId) {
       setError(
-        "No project selected. Create or select a project first.",
+        "No project selected. Create or select a project first."
       );
-
       return;
     }
 
-    if (
-      !code ||
-      !code.trim()
-    ) {
+    if (!code || !code.trim()) {
       setError(
-        "The Code Editor is empty. Upload a file or paste code first.",
+        "The Code Editor is empty. Upload a file or paste code first."
       );
-
       return;
     }
 
-    const lineCount =
-      countLines(code);
+    const lineCount = countLines(code);
 
-    if (
-      lineCount >
-      MAX_CODE_LINES
-    ) {
+    if (lineCount > MAX_CODE_LINES) {
       setError(
-        `CodeGuard supports a maximum of ${MAX_CODE_LINES.toLocaleString()} lines per scan. This source contains ${lineCount.toLocaleString()} lines.`,
+        `CodeGuard supports a maximum of ${MAX_CODE_LINES.toLocaleString()} lines per scan. This source contains ${lineCount.toLocaleString()} lines.`
       );
-
       return;
     }
 
-    const byteSize =
-      new Blob([
-        code,
-      ]).size;
+    const byteSize = new Blob([code]).size;
 
-    if (
-      byteSize >
-      MAX_FILE_SIZE
-    ) {
+    if (byteSize > MAX_FILE_SIZE) {
       setError(
-        "Source code exceeds the 5 MB scanning limit.",
+        "Source code exceeds the 5 MB scanning limit."
       );
-
       return;
     }
 
-    const settings =
-      getSettings();
+    const settings = getSettings();
 
     try {
-      setLoading(
-        true,
-      );
+      setLoading(true);
 
       setSuccess(
-        `Scanning ${lineCount.toLocaleString()} lines...`,
+        `Scanning ${lineCount.toLocaleString()} lines...`
       );
 
       const result =
         await analyzePastedCode({
           projectId,
-
           language,
-
           fileName,
-
           code,
         });
 
-      if (
-        !result?.scan
-      ) {
+      if (!result?.scan) {
         throw new Error(
-          "The server did not return a completed scan.",
+          "The server did not return a completed scan."
         );
       }
 
-      setAnalysisResult(
-        result.scan,
-      );
-
+      setAnalysisResult(result.scan);
       refreshScans();
 
       setSuccess(
-        `Analysis completed successfully. ${lineCount.toLocaleString()} lines scanned using the ${settings.scanProfile} profile.`,
+        `Analysis completed successfully. ${lineCount.toLocaleString()} lines scanned using the ${settings.scanProfile} profile.`
       );
 
-      if (
-        settings
-          .scanNotifications
-      ) {
+      if (settings.scanNotifications) {
         addNotification({
-          type:
-            "success",
-
-          title:
-            "Scan completed",
-
-          message:
-            `${fileName}: ${lineCount.toLocaleString()} lines analysed. Security score ${
-              result.scan
-                .securityScore ??
-              100
-            }/100.`,
+          type: "success",
+          title: "Scan completed",
+          message: `${fileName}: ${lineCount.toLocaleString()} lines analysed. Security score ${
+            result.scan.securityScore ?? 100
+          }/100.`,
         });
       }
 
       const criticalCount =
-        result.scan
-          ?.issueCount
-          ?.critical ||
-        0;
+        result.scan?.issueCount?.critical || 0;
 
       if (
-        settings
-          .criticalNotifications &&
-        criticalCount >
-          0
+        settings.criticalNotifications &&
+        criticalCount > 0
       ) {
         addNotification({
-          type:
-            "critical",
-
+          type: "critical",
           title:
             "Critical vulnerability detected",
-
-          message:
-            `${criticalCount} critical ${
-              criticalCount ===
-              1
-                ? "finding"
-                : "findings"
-            } detected in ${fileName}.`,
+          message: `${criticalCount} critical ${
+            criticalCount === 1
+              ? "finding"
+              : "findings"
+          } detected in ${fileName}.`,
         });
       }
-    } catch (
-      analysisError
-    ) {
+    } catch (analysisError) {
       console.error(
         "ANALYSIS ERROR:",
-        analysisError,
+        analysisError
       );
 
       const message =
         analysisError.message ||
         "Code analysis failed. Check backend logs.";
 
-      setError(
-        message,
-      );
-
+      setError(message);
       setSuccess("");
 
       if (
-        settings
-          .failedScanNotifications
+        settings.failedScanNotifications
       ) {
         addNotification({
-          type:
-            "error",
-
-          title:
-            "Scan failed",
-
+          type: "error",
+          title: "Scan failed",
           message,
         });
       }
     } finally {
-      setLoading(
-        false,
-      );
+      setLoading(false);
     }
   }
 
-  async function handleFile(
-    event,
-  ) {
-    const file =
-      event.target.files?.[
-        0
-      ];
+  async function handleFile(event) {
+    const file = event.target.files?.[0];
 
     setError("");
-
     setSuccess("");
 
     if (!file) {
       return;
     }
 
-    const language =
-      detectLanguage(
-        file.name,
-      );
+    const language = detectLanguage(file.name);
 
     if (!language) {
-      setSelectedFile(
-        null,
-      );
-
+      setSelectedFile(null);
       setError(
-        "Unsupported source-code file type.",
+        "Unsupported source-code file type."
       );
-
       return;
     }
 
-    if (
-      file.size >
-      MAX_FILE_SIZE
-    ) {
-      setSelectedFile(
-        null,
-      );
-
+    if (file.size > MAX_FILE_SIZE) {
+      setSelectedFile(null);
       setError(
-        "File must be 5 MB or smaller.",
+        "File must be 5 MB or smaller."
       );
-
       return;
     }
 
     try {
-      const code =
-        await file.text();
+      const code = await file.text();
 
-      if (
-        !code.trim()
-      ) {
-        setSelectedFile(
-          null,
-        );
-
+      if (!code.trim()) {
+        setSelectedFile(null);
         setError(
-          "The selected file is empty.",
+          "The selected file is empty."
         );
-
         return;
       }
 
-      const lineCount =
-        countLines(
-          code,
-        );
+      const lineCount = countLines(code);
 
-      if (
-        lineCount >
-        MAX_CODE_LINES
-      ) {
-        setSelectedFile(
-          null,
-        );
+      if (lineCount > MAX_CODE_LINES) {
+        setSelectedFile(null);
 
         setError(
-          `Maximum supported source size is ${MAX_CODE_LINES.toLocaleString()} lines. ${file.name} contains ${lineCount.toLocaleString()} lines.`,
+          `Maximum supported source size is ${MAX_CODE_LINES.toLocaleString()} lines. ${file.name} contains ${lineCount.toLocaleString()} lines.`
         );
 
-        if (
-          fileInput.current
-        ) {
-          fileInput.current.value =
-            "";
+        if (fileInput.current) {
+          fileInput.current.value = "";
         }
 
         return;
       }
 
-      setSelectedFile(
-        file,
-      );
+      setSelectedFile(file);
+      setEditorCode(code);
+      setEditorLanguage(language);
+      setEditorFileName(file.name);
 
-      setEditorCode(
-        code,
-      );
+      const settings = getSettings();
 
-      setEditorLanguage(
-        language,
-      );
-
-      setEditorFileName(
-        file.name,
-      );
-
-      const settings =
-        getSettings();
-
-      if (
-        settings.autoScan &&
-        projectId
-      ) {
+      if (settings.autoScan && projectId) {
         setSuccess(
-          `${lineCount.toLocaleString()} lines loaded. Automatic analysis started...`,
+          `${lineCount.toLocaleString()} lines loaded. Automatic analysis started...`
         );
 
         await runAnalysis({
           code,
-
           language,
-
-          fileName:
-            file.name,
+          fileName: file.name,
         });
       } else {
         setSuccess(
-          `${lineCount.toLocaleString()} lines loaded into the Code Editor. You can edit the source before analysis.`,
+          `${lineCount.toLocaleString()} lines loaded into the Code Editor. You can edit the source before analysis.`
         );
       }
-    } catch (
-      readError
-    ) {
+    } catch (readError) {
       console.error(
         "FILE READ ERROR:",
-        readError,
+        readError
       );
 
-      setSelectedFile(
-        null,
-      );
+      setSelectedFile(null);
 
       setError(
-        "Unable to read the selected file.",
+        "Unable to read the selected file."
       );
     }
+  }
+
+  async function handleZip(event) {
+    const file = event.target.files?.[0];
+
+    setError("");
+    setSuccess("");
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      !file.name
+        .toLowerCase()
+        .endsWith(".zip")
+    ) {
+      setSelectedZip(null);
+
+      setError(
+        "Only .zip project archives are supported."
+      );
+
+      return;
+    }
+
+    if (file.size > MAX_ZIP_SIZE) {
+      setSelectedZip(null);
+
+      setError(
+        "ZIP project must be 1 GB or smaller."
+      );
+
+      return;
+    }
+
+    setSelectedZip(file);
+
+    setSuccess(
+      `${file.name} is ready for multi-language project analysis.`
+    );
   }
 
   function clearFile() {
-    setSelectedFile(
-      null,
-    );
-
-    setEditorFileName(
-      createPasteFileName(
-        editorLanguage,
-      ),
-    );
-
-    setSuccess(
-      "Upload cleared. Code in the editor can still be scanned.",
-    );
-
+    setSelectedFile(null);
     setError("");
+    setSuccess(
+      "Source file selection cleared."
+    );
 
-    if (
-      fileInput.current
-    ) {
-      fileInput.current.value =
-        "";
+    if (fileInput.current) {
+      fileInput.current.value = "";
     }
   }
 
- async function analyzeCode() {
-  let language = editorLanguage;
+  function clearZip() {
+    setSelectedZip(null);
+    setError("");
+    setSuccess(
+      "ZIP project selection cleared."
+    );
 
-  let fileName =
-    editorFileName ||
-    createPasteFileName(language);
+    if (zipInput.current) {
+      zipInput.current.value = "";
+    }
+  }
 
-  if (!selectedFile) {
-    const detectedLanguage =
-      detectLanguageFromCode(editorCode);
+  async function analyzeZip() {
+    setError("");
+    setSuccess("");
 
-    if (detectedLanguage) {
-      language = detectedLanguage;
+    if (!projectId) {
+      setError(
+        "No project selected. Create or select a project first."
+      );
+      return;
+    }
 
-      fileName =
-        createPasteFileName(
-          detectedLanguage,
+    if (!selectedZip) {
+      setError(
+        "Choose a ZIP project before starting analysis."
+      );
+      return;
+    }
+
+    const settings = getSettings();
+
+    try {
+      setLoading(true);
+
+      setSuccess(
+        `Scanning ${selectedZip.name}...`
+      );
+
+      const result =
+        await analyzeZipProject({
+          projectId,
+          file: selectedZip,
+          geminiReviewMode,
+        });
+
+      if (!result?.scan) {
+        throw new Error(
+          "The server did not return a completed ZIP scan."
+        );
+      }
+
+      const metadata =
+        result.zipMetadata ||
+        result.scan?.zipMetadata ||
+        {};
+
+      const zipFiles =
+        Array.isArray(metadata.files)
+          ? metadata.files
+          : [];
+
+      const activeFile =
+        [...zipFiles].sort(
+          (a, b) =>
+            (b.issueTotal || 0) -
+            (a.issueTotal || 0)
+        )[0] || null;
+
+      const zipAnalysisResult = {
+        ...result.scan,
+        zipMetadata: {
+          ...(result.scan?.zipMetadata || {}),
+          ...metadata,
+          files: zipFiles,
+        },
+      };
+
+      setAnalysisResult(
+        zipAnalysisResult
+      );
+
+      if (activeFile) {
+        setEditorCode(
+          activeFile.code || ""
         );
 
-      setEditorLanguage(
-        detectedLanguage,
+        setEditorLanguage(
+          activeFile.language ||
+            "javascript"
+        );
+
+        setEditorFileName(
+          activeFile.path ||
+            activeFile.fileName ||
+            "zip-source"
+        );
+      }
+
+      refreshScans();
+
+      const supportedFiles =
+        metadata.supportedFiles ||
+        zipFiles.length ||
+        0;
+
+      const languages =
+        Array.isArray(metadata.languages)
+          ? metadata.languages
+          : [];
+
+      setSuccess(
+        `Project analysis completed. ${supportedFiles.toLocaleString()} supported files scanned${
+          languages.length
+            ? ` across ${languages.join(", ")}`
+            : ""
+        }.`
       );
 
-      setEditorFileName(
-        fileName,
+      if (
+        settings.scanNotifications
+      ) {
+        addNotification({
+          type: "success",
+          title:
+            "Project scan completed",
+          message: `${selectedZip.name}: ${supportedFiles.toLocaleString()} files analysed. Security score ${
+            result.scan.securityScore ??
+            100
+          }/100.`,
+        });
+      }
+
+      const criticalCount =
+        result.scan?.issueCount?.critical ||
+        0;
+
+      if (
+        settings.criticalNotifications &&
+        criticalCount > 0
+      ) {
+        addNotification({
+          type: "critical",
+          title:
+            "Critical vulnerability detected",
+          message: `${criticalCount} critical ${
+            criticalCount === 1
+              ? "finding"
+              : "findings"
+          } detected in ${selectedZip.name}.`,
+        });
+      }
+    } catch (analysisError) {
+      console.error(
+        "ZIP ANALYSIS ERROR:",
+        analysisError
       );
+
+      const message =
+        analysisError.message ||
+        "ZIP project analysis failed. Check backend logs.";
+
+      setError(message);
+      setSuccess("");
+
+      if (
+        settings.failedScanNotifications
+      ) {
+        addNotification({
+          type: "error",
+          title:
+            "Project scan failed",
+          message,
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
-  await runAnalysis({
-    code: editorCode,
-    language,
-    fileName,
-  });
-}
+  async function analyzeCode() {
+    let language = editorLanguage;
+
+    let fileName =
+      editorFileName ||
+      createPasteFileName(language);
+
+    if (!selectedFile) {
+      const detectedLanguage =
+        detectLanguageFromCode(
+          editorCode
+        );
+
+      if (detectedLanguage) {
+        language = detectedLanguage;
+
+        fileName =
+          createPasteFileName(
+            detectedLanguage
+          );
+
+        setEditorLanguage(
+          detectedLanguage
+        );
+
+        setEditorFileName(
+          fileName
+        );
+      }
+    }
+
+    await runAnalysis({
+      code: editorCode,
+      language,
+      fileName,
+    });
+  }
 
   function changeProject(
-    newProjectId,
+    newProjectId
   ) {
-    setProjectId(
-      newProjectId,
-    );
-
+    setProjectId(newProjectId);
     setSelectedProjectId(
-      newProjectId,
+      newProjectId
     );
 
-    const settings =
-      getSettings();
+    const settings = getSettings();
 
     if (
-      settings
-        .rememberLastProject
+      settings.rememberLastProject
     ) {
       localStorage.setItem(
         "selectedProjectId",
-        newProjectId,
+        newProjectId
       );
     } else {
       localStorage.removeItem(
-        "selectedProjectId",
+        "selectedProjectId"
       );
     }
   }
 
   const currentLineCount =
-    countLines(
-      editorCode,
-    );
+    countLines(editorCode);
 
   return (
     <div className="upload-card">
       <h2>
         <FaCloudUploadAlt />
-
         Upload / Scan Source Code
       </h2>
 
       <div
         style={{
-          display:
-            "flex",
-
+          display: "flex",
           justifyContent:
             "space-between",
-
-          gap:
-            "12px",
-
-          marginBottom:
-            "12px",
-
-          fontSize:
-            "11px",
-
-          color:
-            "#94a3b8",
+          gap: "12px",
+          marginBottom: "12px",
+          fontSize: "11px",
+          color: "#94a3b8",
         }}
       >
         <span>
-          Maximum: 25,000
-          lines
+          Maximum: 25,100 lines
         </span>
 
         <span>
@@ -899,15 +921,10 @@ export default function UploadCard() {
 
         <select
           id="scanProject"
-          value={
-            projectId
-          }
-          onChange={(
-            event,
-          ) =>
+          value={projectId}
+          onChange={(event) =>
             changeProject(
-              event.target
-                .value,
+              event.target.value
             )
           }
           disabled={
@@ -917,164 +934,402 @@ export default function UploadCard() {
         >
           {projectsLoading && (
             <option value="">
-              Loading
-              projects...
+              Loading projects...
             </option>
           )}
 
           {!projectsLoading &&
-            projects.length ===
-              0 && (
+            projects.length === 0 && (
               <option value="">
-                No projects
-                available
+                No projects available
               </option>
             )}
 
-          {projects.map(
-            (project) => (
-              <option
-                key={
-                  project._id
-                }
-                value={
-                  project._id
-                }
-              >
-                {
-                  project.name
-                }
-              </option>
-            ),
-          )}
+          {projects.map((project) => (
+            <option
+              key={project._id}
+              value={project._id}
+            >
+              {project.name}
+            </option>
+          ))}
         </select>
       </div>
 
       <div
-        className="drop-zone"
-        onClick={() =>
-          !loading &&
-          fileInput.current?.click()
-        }
-        onKeyDown={(
-          event,
-        ) => {
-          if (
-            !loading &&
-            (
-              event.key ===
-                "Enter" ||
-              event.key ===
-                " "
-            )
-          ) {
-            fileInput.current?.click();
-          }
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "1fr 1fr",
+          gap: "8px",
+          marginBottom: "12px",
         }}
-        role="button"
-        tabIndex={0}
       >
-        <FaFileCode className="upload-icon" />
-
-        <h3>
-          {selectedFile
-            ? selectedFile.name
-            : "Choose Source File"}
-        </h3>
-
-        <p>
-          {selectedFile
-            ? `${Math.ceil(
-                selectedFile.size /
-                  1024,
-              ).toLocaleString()} KB • ${currentLineCount.toLocaleString()} lines`
-            : "Optional — paste code directly into the editor or upload up to 25,000 lines"}
-        </p>
-      </div>
-
-      <input
-        ref={
-          fileInput
-        }
-        type="file"
-        hidden
-        accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.cpp,.cc,.h,.hpp,.go,.php,.rb,.rs"
-        onChange={
-          handleFile
-        }
-      />
-
-      {selectedFile && (
         <button
           type="button"
-          onClick={
-            clearFile
-          }
-          disabled={
-            loading
-          }
+          onClick={() => {
+            setUploadMode("source");
+            setError("");
+            setSuccess("");
+          }}
+          disabled={loading}
           style={{
-            marginTop:
-              "10px",
-
-            padding:
-              "9px 14px",
-
-            borderRadius:
-              "8px",
-
+            padding: "10px 12px",
+            borderRadius: "8px",
             border:
-              "1px solid #64748b",
-
+              uploadMode === "source"
+                ? "1px solid #3b82f6"
+                : "1px solid #64748b",
             background:
-              "transparent",
-
-            color:
-              "inherit",
-
-            cursor:
-              "pointer",
+              uploadMode === "source"
+                ? "rgba(59,130,246,.12)"
+                : "transparent",
+            color: "inherit",
+            cursor: loading
+              ? "not-allowed"
+              : "pointer",
           }}
         >
-          Clear Uploaded File
+          Source File
         </button>
-      )}
 
-      {editorCode && (
-        <div
+        <button
+          type="button"
+          onClick={() => {
+            setUploadMode("zip");
+            setError("");
+            setSuccess("");
+          }}
+          disabled={loading}
           style={{
-            marginTop:
-              "10px",
-
-            padding:
-              "8px 10px",
-
-            borderRadius:
-              "8px",
-
+            padding: "10px 12px",
+            borderRadius: "8px",
+            border:
+              uploadMode === "zip"
+                ? "1px solid #3b82f6"
+                : "1px solid #64748b",
             background:
-              currentLineCount >
-              MAX_CODE_LINES
-                ? "rgba(239,68,68,.08)"
-                : "rgba(59,130,246,.07)",
-
-            color:
-              currentLineCount >
-              MAX_CODE_LINES
-                ? "#fca5a5"
-                : "#93c5fd",
-
-            fontSize:
-              "10px",
+              uploadMode === "zip"
+                ? "rgba(59,130,246,.12)"
+                : "transparent",
+            color: "inherit",
+            cursor: loading
+              ? "not-allowed"
+              : "pointer",
           }}
         >
-          Code Editor:{" "}
-          {currentLineCount.toLocaleString()}
-          {" / "}
-          {MAX_CODE_LINES.toLocaleString()}
-          {" lines"}
-        </div>
+          Project ZIP
+        </button>
+      </div>
+
+      {uploadMode === "source" && (
+        <>
+          <div
+            className="drop-zone"
+            onClick={() =>
+              !loading &&
+              fileInput.current?.click()
+            }
+            onKeyDown={(event) => {
+              if (
+                !loading &&
+                (event.key === "Enter" ||
+                  event.key === " ")
+              ) {
+                fileInput.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <FaFileCode className="upload-icon" />
+
+            <h3>
+              {selectedFile
+                ? selectedFile.name
+                : "Choose Source File"}
+            </h3>
+
+            <p>
+              {selectedFile
+                ? `${Math.ceil(
+                    selectedFile.size /
+                      1024
+                  ).toLocaleString()} KB • ${currentLineCount.toLocaleString()} lines`
+                : "Optional — paste code directly into the editor or upload up to 25,100 lines"}
+            </p>
+          </div>
+
+          <input
+            ref={fileInput}
+            type="file"
+            hidden
+            accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.cpp,.cc,.h,.hpp,.go,.php,.rb,.rs"
+            onChange={handleFile}
+          />
+
+          {selectedFile && (
+            <button
+              type="button"
+              onClick={clearFile}
+              disabled={loading}
+              style={{
+                marginTop: "10px",
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border:
+                  "1px solid #64748b",
+                background:
+                  "transparent",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              Clear Uploaded File
+            </button>
+          )}
+        </>
       )}
+
+      {uploadMode === "zip" && (
+        <>
+          <div
+            className="drop-zone"
+            onClick={() =>
+              !loading &&
+              zipInput.current?.click()
+            }
+            onKeyDown={(event) => {
+              if (
+                !loading &&
+                (event.key === "Enter" ||
+                  event.key === " ")
+              ) {
+                zipInput.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <FaCloudUploadAlt className="upload-icon" />
+
+            <h3>
+              {selectedZip
+                ? selectedZip.name
+                : "Choose Project ZIP"}
+            </h3>
+
+            <p>
+              {selectedZip
+                ? `${(
+                    selectedZip.size /
+                    1024 /
+                    1024
+                  ).toFixed(2)} MB`
+                : "Upload Python, JavaScript, TypeScript, Java, C or C++ projects"}
+            </p>
+          </div>
+
+          <input
+            ref={zipInput}
+            type="file"
+            hidden
+            accept=".zip,application/zip"
+            onChange={handleZip}
+          />
+
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "12px",
+              borderRadius: "8px",
+              border:
+                "1px solid rgba(148,163,184,.25)",
+              background:
+                "rgba(15,23,42,.35)",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: "600",
+                marginBottom: "9px",
+                fontSize: "13px",
+              }}
+            >
+              Gemini AI Review
+            </div>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "7px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="geminiReviewMode"
+                value="findings"
+                checked={
+                  geminiReviewMode ===
+                  "findings"
+                }
+                onChange={(event) =>
+                  setGeminiReviewMode(
+                    event.target.value
+                  )
+                }
+                disabled={loading}
+              />
+              Files containing security findings
+            </label>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "7px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="geminiReviewMode"
+                value="sensitive"
+                checked={
+                  geminiReviewMode ===
+                  "sensitive"
+                }
+                onChange={(event) =>
+                  setGeminiReviewMode(
+                    event.target.value
+                  )
+                }
+                disabled={loading}
+              />
+              Security-sensitive files
+            </label>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "7px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="geminiReviewMode"
+                value="remaining"
+                checked={
+                  geminiReviewMode ===
+                  "remaining"
+                }
+                onChange={(event) =>
+                  setGeminiReviewMode(
+                    event.target.value
+                  )
+                }
+                disabled={loading}
+              />
+              Remaining source files
+            </label>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="geminiReviewMode"
+                value="off"
+                checked={
+                  geminiReviewMode === "off"
+                }
+                onChange={(event) =>
+                  setGeminiReviewMode(
+                    event.target.value
+                  )
+                }
+                disabled={loading}
+              />
+              Off
+            </label>
+          </div>
+
+          <div
+            style={{
+              marginTop: "8px",
+              fontSize: "11px",
+              color: "#94a3b8",
+            }}
+          >
+            ZIP limit: 1 GB
+          </div>
+
+          {selectedZip && (
+            <button
+              type="button"
+              onClick={clearZip}
+              disabled={loading}
+              style={{
+                marginTop: "10px",
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border:
+                  "1px solid #64748b",
+                background:
+                  "transparent",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              Clear Project ZIP
+            </button>
+          )}
+        </>
+      )}
+
+      {uploadMode === "source" &&
+        editorCode && (
+          <div
+            style={{
+              marginTop: "10px",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              background:
+                currentLineCount >
+                MAX_CODE_LINES
+                  ? "rgba(239,68,68,.08)"
+                  : "rgba(59,130,246,.07)",
+              color:
+                currentLineCount >
+                MAX_CODE_LINES
+                  ? "#fca5a5"
+                  : "#93c5fd",
+              fontSize: "10px",
+            }}
+          >
+            Code Editor:{" "}
+            {currentLineCount.toLocaleString()}
+            {" / "}
+            {MAX_CODE_LINES.toLocaleString()}
+            {" lines"}
+          </div>
+        )}
 
       {error && (
         <div
@@ -1094,23 +1349,30 @@ export default function UploadCard() {
       <button
         type="button"
         className={`analyze-btn ${
-          loading
-            ? "loading"
-            : ""
+          loading ? "loading" : ""
         }`}
         onClick={
-          analyzeCode
+          uploadMode === "zip"
+            ? analyzeZip
+            : analyzeCode
         }
         disabled={
           loading ||
           projectsLoading ||
-          currentLineCount >
-            MAX_CODE_LINES
+          (uploadMode === "source" &&
+            currentLineCount >
+              MAX_CODE_LINES) ||
+          (uploadMode === "zip" &&
+            !selectedZip)
         }
       >
         {loading
-          ? `Analysing ${currentLineCount.toLocaleString()} lines...`
-          : "🚀 Analyse Code"}
+          ? uploadMode === "zip"
+            ? "Analysing Project ZIP..."
+            : `Analysing ${currentLineCount.toLocaleString()} lines...`
+          : uploadMode === "zip"
+            ? "🚀 Analyse Project ZIP"
+            : "🚀 Analyse Code"}
       </button>
     </div>
   );

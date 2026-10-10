@@ -23,45 +23,61 @@ import LanguageCard from "./cards/LanguageCard";
 import "./DashboardLayout.css";
 
 export default function DashboardLayout() {
-  const navigate = useNavigate();
-  const context = useContext(AnalysisContext);
+  const navigate =
+    useNavigate();
+
+  const context =
+    useContext(
+      AnalysisContext,
+    );
 
   if (!context) {
     throw new Error(
-      "DashboardLayout must be used inside AnalysisProvider"
+      "DashboardLayout must be used inside AnalysisProvider",
     );
   }
 
-  const { analysisResult } = context;
+  const {
+    analysisResult,
+  } = context;
 
   const [
     selectedSeverity,
     setSelectedSeverity,
   ] = useState(null);
 
-  const handleLogout = async () => {
-    try {
-      await logoutUser();
-    } catch (error) {
-      console.error(
-        "Logout request failed:",
-        error
-      );
-    } finally {
-      navigate("/login", {
-        replace: true,
-      });
-    }
-  };
+  const handleLogout =
+    async () => {
+      try {
+        await logoutUser();
+      } catch (error) {
+        console.error(
+          "Logout request failed:",
+          error,
+        );
+      } finally {
+        navigate(
+          "/login",
+          {
+            replace: true,
+          },
+        );
+      }
+    };
 
   const score =
-    analysisResult?.securityScore ?? 100;
+    analysisResult
+      ?.securityScore ??
+    100;
 
   const language =
-    analysisResult?.language || "Unknown";
+    analysisResult
+      ?.language ||
+    "Unknown";
 
   const issueCount =
-    analysisResult?.issueCount || {
+    analysisResult
+      ?.issueCount || {
       critical: 0,
       high: 0,
       medium: 0,
@@ -70,36 +86,46 @@ export default function DashboardLayout() {
     };
 
   const critical =
-    issueCount.critical || 0;
+    issueCount.critical ||
+    0;
 
   const high =
-    issueCount.high || 0;
+    issueCount.high ||
+    0;
 
   const medium =
-    issueCount.medium || 0;
+    issueCount.medium ||
+    0;
 
   const low =
-    (issueCount.low || 0) +
-    (issueCount.info || 0);
+    (issueCount.low ||
+      0) +
+    (issueCount.info ||
+      0);
 
   return (
     <div className="dashboard-container">
       <SidebarMenu
-        onLogout={handleLogout}
+        onLogout={
+          handleLogout
+        }
       />
 
       <main className="dashboard-content">
         <TopBar />
 
         <div className="dashboard-grid">
-          
           <div className="dashboard-column">
             <SecurityScore
-              score={score}
+              score={
+                score
+              }
             />
 
             <LanguageCard
-              language={language}
+              language={
+                language
+              }
             />
 
             <UploadCard />
@@ -115,14 +141,24 @@ export default function DashboardLayout() {
 
           <div className="dashboard-column">
             <RiskLevel
-              score={score}
+              score={
+                score
+              }
             />
 
             <IssueSummary
-              critical={critical}
-              high={high}
-              medium={medium}
-              low={low}
+              critical={
+                critical
+              }
+              high={
+                high
+              }
+              medium={
+                medium
+              }
+              low={
+                low
+              }
               selectedSeverity={
                 selectedSeverity
               }
@@ -135,7 +171,6 @@ export default function DashboardLayout() {
 
             <AISuggestions />
           </div>
-
         </div>
       </main>
     </div>

@@ -1,34 +1,40 @@
 .security-page {
   min-height: 100vh;
+  width: 100%;
   box-sizing: border-box;
   padding: 28px;
   color: #e8eef9;
   background: #0b1120;
 }
 
-/* =========================================================
-   PAGE HEADER
-   ========================================================= */
+.security-page *,
+.security-page *::before,
+.security-page *::after {
+  box-sizing: border-box;
+}
+
+.security-page-header,
+.security-message,
+.security-overview-grid,
+.security-layout {
+  width: 100%;
+  max-width: 1260px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 .security-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 22px;
-
-  width: 100%;
-  max-width: 1260px;
-
-  margin: 0 auto 18px;
+  margin-bottom: 18px;
 }
 
 .security-eyebrow {
   display: block;
-
   margin-bottom: 6px;
-
   color: #60a5fa;
-
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -36,44 +42,32 @@
 
 .security-page-header h1 {
   margin: 0;
-
   font-size: 30px;
   line-height: 1.2;
 }
 
 .security-page-header p {
   max-width: 650px;
-
   margin: 7px 0 0;
-
   color: #94a3b8;
-
   font-size: 12px;
   line-height: 1.6;
 }
 
-/* =========================================================
-   SECURITY HEALTH
-   ========================================================= */
-
 .security-health {
   display: flex;
   align-items: center;
-
   gap: 11px;
-
+  flex-shrink: 0;
   padding: 11px 15px;
-
   border: 1px solid rgba(34, 197, 94, 0.22);
   border-radius: 12px;
-
   color: #86efac;
   background: rgba(34, 197, 94, 0.08);
 }
 
 .security-health svg {
   flex-shrink: 0;
-
   font-size: 22px;
 }
 
@@ -88,88 +82,53 @@
 
 .security-health span {
   color: #718198;
-
   font-size: 8px;
 }
-
-/* =========================================================
-   MESSAGES
-   ========================================================= */
 
 .security-message {
   display: flex;
   align-items: center;
-
   gap: 8px;
-
-  width: 100%;
-  max-width: 1260px;
-
-  box-sizing: border-box;
-
-  margin: 0 auto 12px;
+  margin-top: 0;
+  margin-bottom: 12px;
   padding: 10px 12px;
-
   border-radius: 9px;
-
   font-size: 10px;
 }
 
 .security-message.success {
   border: 1px solid rgba(34, 197, 94, 0.2);
-
   color: #86efac;
   background: rgba(34, 197, 94, 0.08);
 }
 
 .security-message.error {
   border: 1px solid rgba(239, 68, 68, 0.2);
-
   color: #fca5a5;
   background: rgba(239, 68, 68, 0.08);
 }
 
-/* =========================================================
-   TOP SECURITY STATUS CARDS
-   ========================================================= */
-
 .security-overview-grid {
   display: grid;
-
   grid-template-columns: repeat(4, minmax(0, 1fr));
-
   gap: 12px;
-
-  width: 100%;
-  max-width: 1260px;
-
-  margin: 0 auto;
 }
 
 .security-stat-card {
   display: flex;
   align-items: center;
-
   gap: 12px;
-
   min-width: 0;
   min-height: 82px;
-
-  box-sizing: border-box;
-
   padding: 0 15px;
-
   border: 1px solid #24324a;
   border-radius: 12px;
-
   background: #111827;
 }
 
 .security-stat-card > svg {
   flex-shrink: 0;
-
   color: #60a5fa;
-
   font-size: 21px;
 }
 
@@ -179,100 +138,65 @@
 
 .security-stat-card span {
   display: block;
-
   color: #718198;
-
   font-size: 8px;
 }
 
 .security-stat-card strong {
   display: block;
-
   margin-top: 4px;
-
   overflow: hidden;
-
   font-size: 12px;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* =========================================================
-   MAIN TWO-COLUMN LAYOUT
-   ========================================================= */
-
 .security-layout {
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1.55fr)
-    minmax(320px, 0.8fr);
-
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
   align-items: start;
-
   gap: 18px;
-
-  width: 100%;
-  max-width: 1260px;
-
-  margin: 22px auto 0;
+  margin-top: 22px;
 }
 
 .security-main-column,
 .security-side-column {
   display: flex;
   flex-direction: column;
-
   gap: 18px;
-
   min-width: 0;
+  width: 100%;
 }
-
-/* =========================================================
-   GENERAL CARD
-   ========================================================= */
 
 .security-card {
   position: relative;
-
+  display: block;
   width: 100%;
-
-  box-sizing: border-box;
-
+  height: auto;
+  min-height: 0;
+  max-height: none;
   padding: 18px;
-
+  overflow: visible;
   border: 1px solid #24324a;
   border-radius: 13px;
-
   background: #111827;
 }
 
-/* =========================================================
-   LEFT COLUMN CARD HEADINGS
-   ========================================================= */
-
 .security-card-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: 39px minmax(0, 1fr) auto;
   align-items: center;
-
   gap: 12px;
-
+  width: 100%;
   min-width: 0;
 }
 
 .security-heading-icon {
   display: grid;
-
-  flex: 0 0 auto;
-
   width: 39px;
   height: 39px;
-
   place-items: center;
-
   border-radius: 10px;
-
   color: #93c5fd;
   background: rgba(59, 130, 246, 0.09);
 }
@@ -283,143 +207,44 @@
 }
 
 .security-card-heading > div:nth-child(2) {
-  flex: 1;
-
   min-width: 0;
 }
 
 .security-card-heading h2 {
   position: static;
-
   margin: 0;
   padding: 0;
-
   transform: none;
-
   color: #e8eef9;
-
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
-
   text-align: left;
 }
 
 .security-card-heading p {
   margin: 4px 0 0;
-
   color: #718198;
-
   font-size: 9px;
   line-height: 1.5;
 }
 
-/* =========================================================
-   RIGHT COLUMN CARDS
-   ========================================================= */
-
-.security-side-column {
-  align-self: start;
-}
-
-/*
-  IMPORTANT:
-  These cards have their own title layout.
-  No absolute positioning.
-  No negative margins.
-  No transforms.
-*/
-
-.security-side-column .security-card {
-  display: block;
-
-  padding: 24px 22px 22px;
-}
-
-/* blue uppercase label */
-
-.security-side-column
-.security-card
-> .security-section-label {
-  position: static;
-
-  display: block;
-
-  width: 100%;
-
-  box-sizing: border-box;
-
-  margin: 0 0 7px;
-  padding: 0;
-
-  transform: none;
-
-  color: #60a5fa;
-
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1.4;
-  letter-spacing: 0.12em;
-
-  text-align: center;
-}
-
-/* Security Information / Security Checklist */
-
-.security-side-column
-.security-card
-> h2 {
-  position: static;
-
-  display: block;
-
-  width: 100%;
-
-  box-sizing: border-box;
-
-  margin: 0 0 20px;
-  padding: 0;
-
-  transform: none;
-
-  color: #e8eef9;
-
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.35;
-
-  text-align: center;
-}
-
-/*
-  Extra safe spacing specifically for the account card.
-  This prevents Security Information from ever touching
-  the upper border.
-*/
-
-.security-account-card {
-  padding: 28px 22px 22px;
-}
-
-/* =========================================================
-   CHANGE PASSWORD
-   ========================================================= */
-
 .security-secondary-button {
-  min-height: 34px;
-
-  padding: 0 10px;
-
-  border: 1px solid rgba(59, 130, 246, 0.22);
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
   border-radius: 8px;
-
   color: #bfdbfe;
   background: rgba(59, 130, 246, 0.08);
-
   cursor: pointer;
-
   font-size: 9px;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.security-secondary-button:hover {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(59, 130, 246, 0.14);
 }
 
 .security-secondary-button:disabled {
@@ -428,76 +253,72 @@
 }
 
 .change-password-form {
-  margin-top: 17px;
-  padding-top: 15px;
-
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.security-password-grid {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 11px;
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 20px 0 0;
+  padding: 20px 0 2px;
+  overflow: visible;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .security-form-field {
-  margin-bottom: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 14px;
 }
 
 .security-form-field label {
   display: block;
-
-  margin-bottom: 6px;
-
+  margin: 0 0 7px;
   color: #cbd5e1;
-
   font-size: 9px;
   font-weight: 700;
 }
 
 .security-form-field input {
+  display: block;
   width: 100%;
-  min-height: 40px;
-
-  box-sizing: border-box;
-
-  padding: 0 11px;
-
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
   border: 1px solid #334155;
-  border-radius: 8px;
-
+  border-radius: 9px;
   outline: none;
-
   color: #e2e8f0;
   background: #0f172a;
-
   font-size: 11px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .security-form-field input:focus {
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .security-form-field input:disabled {
   opacity: 0.7;
 }
 
-/* =========================================================
-   PASSWORD STRENGTH
-   ========================================================= */
+.security-password-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
 
 .password-strength {
-  margin: 3px 0 14px;
+  width: 100%;
+  margin: 1px 0 15px;
 }
 
 .password-strength-top {
   display: flex;
   justify-content: space-between;
-
-  margin-bottom: 6px;
-
+  gap: 12px;
+  margin-bottom: 7px;
   font-size: 8px;
 }
 
@@ -518,20 +339,16 @@
 }
 
 .password-strength-track {
+  width: 100%;
   height: 5px;
-
   overflow: hidden;
-
   border-radius: 99px;
-
   background: #273449;
 }
 
 .password-strength-track div {
   height: 100%;
-
   border-radius: inherit;
-
   transition: width 0.2s ease;
 }
 
@@ -550,18 +367,16 @@
 .password-guidelines {
   display: flex;
   flex-wrap: wrap;
-
+  align-items: center;
   gap: 7px;
-
-  margin-bottom: 13px;
+  width: 100%;
+  margin: 0 0 15px;
 }
 
 .password-guidelines strong,
 .password-guidelines span {
   padding: 4px 7px;
-
   border-radius: 6px;
-
   font-size: 8px;
 }
 
@@ -575,26 +390,23 @@
 }
 
 .change-password-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-
   gap: 7px;
-
-  min-height: 39px;
-
-  padding: 0 14px;
-
+  min-height: 40px;
+  padding: 0 15px;
   border: 1px solid #3b82f6;
   border-radius: 8px;
-
-  color: #ffffff;
+  color: #fff;
   background: #2563eb;
-
   cursor: pointer;
-
   font-size: 9px;
   font-weight: 800;
+}
+
+.change-password-button:hover {
+  background: #1d4ed8;
 }
 
 .change-password-button:disabled {
@@ -602,66 +414,49 @@
   cursor: not-allowed;
 }
 
-/* =========================================================
-   ACTIVE SESSION
-   ========================================================= */
-
 .session-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 14px;
-
+  width: 100%;
   margin: 16px 0 12px;
   padding: 12px;
-
   border: 1px solid rgba(34, 197, 94, 0.14);
   border-radius: 9px;
-
   background: rgba(34, 197, 94, 0.05);
 }
 
 .session-card > div {
   display: flex;
   align-items: center;
-
   gap: 9px;
+  min-width: 0;
 }
 
 .session-status-dot {
   flex: 0 0 auto;
-
   width: 8px;
   height: 8px;
-
   border-radius: 50%;
-
   background: #22c55e;
-
-  box-shadow:
-    0 0 0 4px rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
 }
 
 .session-card strong {
   display: block;
-
   font-size: 9px;
 }
 
 .session-card p {
   margin: 3px 0 0;
-
   color: #718198;
-
   font-size: 8px;
 }
 
 .session-active-label {
   flex-shrink: 0;
-
   color: #86efac;
-
   font-size: 8px;
   font-weight: 800;
 }
@@ -670,26 +465,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: 7px;
-
   width: 100%;
-  min-height: 38px;
-
-  box-sizing: border-box;
-
+  min-height: 40px;
   padding: 0 12px;
-
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 8px;
-
   color: #fca5a5;
   background: rgba(239, 68, 68, 0.07);
-
   cursor: pointer;
-
   font-size: 9px;
   font-weight: 800;
+}
+
+.logout-all-button:hover {
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .logout-all-button:disabled {
@@ -697,32 +487,71 @@
   cursor: not-allowed;
 }
 
-/* =========================================================
-   SECURITY INFORMATION
-   ========================================================= */
+.security-side-column {
+  align-self: start;
+}
+
+.security-side-column .security-card {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 24px 22px;
+  overflow: visible;
+}
+
+.security-section-label {
+  position: static;
+  display: block;
+  width: 100%;
+  margin: 0 0 7px;
+  padding: 0;
+  transform: none;
+  color: #60a5fa;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.security-side-column .security-card > h2 {
+  position: static;
+  display: block;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 0;
+  transform: none;
+  color: #e8eef9;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.security-account-card {
+  height: auto;
+  min-height: 0;
+  padding-top: 26px;
+}
 
 .security-detail-list {
+  display: block;
   width: 100%;
-
+  height: auto;
   margin: 0;
   padding: 0;
+  overflow: visible;
 }
 
 .security-detail-list > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 15px;
-
-  min-height: 34px;
-
-  box-sizing: border-box;
-
+  width: 100%;
+  min-height: 36px;
   padding: 9px 0;
-
-  border-bottom:
-    1px solid rgba(148, 163, 184, 0.08);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
 }
 
 .security-detail-list > div:last-child {
@@ -731,79 +560,58 @@
 
 .security-detail-list span {
   flex-shrink: 0;
-
   color: #718198;
-
   font-size: 8px;
 }
 
 .security-detail-list strong {
   max-width: 65%;
-
   overflow: hidden;
-
   color: #dbeafe;
-
   font-size: 8px;
-
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* =========================================================
-   SECURITY CHECKLIST
-   ========================================================= */
-
 .security-checklist {
   display: flex;
   flex-direction: column;
-
-  gap: 9px;
-
+  gap: 10px;
+  width: 100%;
+  height: auto;
   margin: 0;
   padding: 0;
+  overflow: visible;
 }
 
 .security-checklist div {
   display: flex;
   align-items: center;
-
   gap: 8px;
-
+  min-height: 17px;
   color: #9fb0c4;
-
   font-size: 9px;
 }
 
 .security-checklist svg {
   flex: 0 0 auto;
-
   color: #22c55e;
 }
 
-/* =========================================================
-   LOADING
-   ========================================================= */
-
 .security-loading {
   max-width: 700px;
-
   margin: 80px auto;
-
   text-align: center;
 }
 
 .security-loader {
   width: 28px;
   height: 28px;
-
   margin: 0 auto 12px;
-
   border: 3px solid rgba(96, 165, 250, 0.2);
   border-top-color: #60a5fa;
   border-radius: 50%;
-
   animation: security-spin 0.8s linear infinite;
 }
 
@@ -813,10 +621,6 @@
   }
 }
 
-/* =========================================================
-   LIGHT THEME
-   ========================================================= */
-
 html[data-theme="light"] .security-page {
   color: #0f172a;
   background: #f1f5f9;
@@ -825,52 +629,42 @@ html[data-theme="light"] .security-page {
 html[data-theme="light"] .security-stat-card,
 html[data-theme="light"] .security-card {
   border-color: #dbe3ee;
-
-  background: #ffffff;
+  background: #fff;
 }
 
-html[data-theme="light"]
-.security-card-heading h2,
-html[data-theme="light"]
-.security-side-column
-.security-card
-> h2 {
+html[data-theme="light"] .security-card-heading h2,
+html[data-theme="light"] .security-side-column .security-card > h2 {
   color: #0f172a;
 }
 
-html[data-theme="light"]
-.security-form-field input {
+html[data-theme="light"] .security-form-field input {
   border-color: #cbd5e1;
-
   color: #0f172a;
   background: #f8fafc;
 }
 
-html[data-theme="light"]
-.security-form-field label {
+html[data-theme="light"] .security-form-field label {
   color: #334155;
 }
 
-html[data-theme="light"]
-.security-detail-list strong {
+html[data-theme="light"] .security-detail-list strong {
   color: #334155;
 }
 
-/* =========================================================
-   TABLET
-   ========================================================= */
+@media (max-width: 1050px) {
+  .security-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.75fr);
+  }
+}
 
 @media (max-width: 900px) {
   .security-overview-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .security-layout {
     grid-template-columns: 1fr;
-
     gap: 18px;
-
     margin-top: 20px;
   }
 
@@ -882,15 +676,7 @@ html[data-theme="light"]
   .security-side-column .security-card {
     padding: 24px 20px;
   }
-
-  .security-account-card {
-    padding-top: 26px;
-  }
 }
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
 
 @media (max-width: 600px) {
   .security-page {
@@ -899,19 +685,15 @@ html[data-theme="light"]
 
   .security-page-header {
     flex-direction: column;
-
     align-items: flex-start;
   }
 
   .security-health {
     width: 100%;
-
-    box-sizing: border-box;
   }
 
   .security-overview-grid {
     grid-template-columns: 1fr;
-
     gap: 10px;
   }
 
@@ -924,39 +706,32 @@ html[data-theme="light"]
   }
 
   .security-card-heading {
-    flex-direction: column;
-
-    align-items: flex-start;
+    grid-template-columns: 39px minmax(0, 1fr);
+    align-items: start;
   }
 
-  .security-secondary-button {
+  .security-card-heading .security-secondary-button {
+    grid-column: 1 / -1;
     width: 100%;
   }
 
   .security-password-grid {
     grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .change-password-button,
+  .logout-all-button {
+    width: 100%;
   }
 
   .session-card {
     flex-direction: column;
-
     align-items: flex-start;
   }
 
   .security-side-column .security-card {
     padding: 22px 17px;
-  }
-
-  .security-account-card {
-    padding-top: 24px;
-  }
-
-  .security-side-column
-  .security-card
-  > h2 {
-    margin-bottom: 16px;
-
-    font-size: 15px;
   }
 
   .security-detail-list > div {
@@ -965,284 +740,7 @@ html[data-theme="light"]
 
   .security-detail-list strong {
     max-width: 65%;
-
     white-space: normal;
-
     overflow-wrap: anywhere;
-  }
-
-  .change-password-button,
-  .logout-all-button {
-    width: 100%;
-  }
-}
-
-/* =========================================================
-   SECURITY PAGE FINAL CARD HEIGHT / OVERFLOW FIX
-   ========================================================= */
-
-.security-page .security-layout {
-  align-items: start !important;
-}
-
-.security-page .security-main-column,
-.security-page .security-side-column {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-}
-
-.security-page .security-side-column {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 18px !important;
-
-  overflow: visible !important;
-}
-
-/* IMPORTANT:
-   Cancel any fixed .security-card height coming from other CSS files.
-*/
-.security-page .security-side-column .security-card {
-  position: relative !important;
-
-  display: block !important;
-
-  width: 100% !important;
-
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-
-  box-sizing: border-box !important;
-
-  padding: 24px 22px 22px !important;
-
-  overflow: visible !important;
-}
-
-/* ACCOUNT CARD */
-
-.security-page
-.security-side-column
-.security-account-card {
-  height: auto !important;
-  min-height: 300px !important;
-  max-height: none !important;
-
-  padding: 26px 22px 20px !important;
-
-  overflow: visible !important;
-}
-
-/* ACCOUNT DETAILS LABEL */
-
-.security-page
-.security-side-column
-.security-account-card
-> .security-section-label {
-  position: static !important;
-
-  width: 100% !important;
-
-  margin: 0 0 7px !important;
-  padding: 0 !important;
-
-  transform: none !important;
-
-  text-align: center !important;
-}
-
-/* SECURITY INFORMATION TITLE */
-
-.security-page
-.security-side-column
-.security-account-card
-> h2 {
-  position: static !important;
-
-  width: 100% !important;
-
-  margin: 0 0 18px !important;
-  padding: 0 !important;
-
-  transform: none !important;
-
-  font-size: 16px !important;
-  line-height: 1.3 !important;
-
-  text-align: center !important;
-}
-
-/* SECURITY INFORMATION ROWS */
-
-.security-page
-.security-side-column
-.security-detail-list {
-  display: block !important;
-
-  width: 100% !important;
-
-  height: auto !important;
-  max-height: none !important;
-
-  margin: 0 !important;
-  padding: 0 !important;
-
-  overflow: visible !important;
-}
-
-.security-page
-.security-side-column
-.security-detail-list
-> div {
-  display: flex !important;
-
-  align-items: center !important;
-  justify-content: space-between !important;
-
-  width: 100% !important;
-  min-height: 34px !important;
-
-  box-sizing: border-box !important;
-
-  gap: 15px !important;
-
-  padding: 8px 0 !important;
-}
-
-.security-page
-.security-side-column
-.security-detail-list
-> div:last-child {
-  border-bottom: none !important;
-}
-
-/* CHECKLIST CARD */
-
-.security-page
-.security-side-column
-.security-card:not(.security-account-card) {
-  height: auto !important;
-  min-height: 205px !important;
-  max-height: none !important;
-
-  overflow: visible !important;
-}
-
-/* RECOMMENDATIONS LABEL */
-
-.security-page
-.security-side-column
-.security-card:not(.security-account-card)
-> .security-section-label {
-  position: static !important;
-
-  width: 100% !important;
-
-  margin: 0 0 7px !important;
-  padding: 0 !important;
-
-  transform: none !important;
-
-  text-align: center !important;
-}
-
-/* SECURITY CHECKLIST TITLE */
-
-.security-page
-.security-side-column
-.security-card:not(.security-account-card)
-> h2 {
-  position: static !important;
-
-  width: 100% !important;
-
-  margin: 0 0 18px !important;
-  padding: 0 !important;
-
-  transform: none !important;
-
-  font-size: 16px !important;
-  line-height: 1.3 !important;
-
-  text-align: center !important;
-}
-
-/* CHECKLIST CONTENT */
-
-.security-page
-.security-side-column
-.security-checklist {
-  display: flex !important;
-
-  flex-direction: column !important;
-
-  width: 100% !important;
-
-  height: auto !important;
-  max-height: none !important;
-
-  gap: 9px !important;
-
-  margin: 0 !important;
-  padding: 0 !important;
-
-  overflow: visible !important;
-}
-
-.security-page
-.security-side-column
-.security-checklist
-> div {
-  position: static !important;
-
-  display: flex !important;
-
-  align-items: center !important;
-
-  min-height: 16px !important;
-
-  margin: 0 !important;
-  padding: 0 !important;
-
-  overflow: visible !important;
-}
-
-/* TABLET */
-
-@media (max-width: 900px) {
-  .security-page
-  .security-side-column
-  .security-account-card {
-    min-height: 0 !important;
-  }
-
-  .security-page
-  .security-side-column
-  .security-card:not(.security-account-card) {
-    min-height: 0 !important;
-  }
-}
-
-/* MOBILE */
-
-@media (max-width: 600px) {
-  .security-page
-  .security-side-column
-  .security-card {
-    padding: 22px 17px !important;
-  }
-
-  .security-page
-  .security-side-column
-  .security-account-card {
-    min-height: 0 !important;
-  }
-
-  .security-page
-  .security-side-column
-  .security-card:not(.security-account-card) {
-    min-height: 0 !important;
   }
 }
