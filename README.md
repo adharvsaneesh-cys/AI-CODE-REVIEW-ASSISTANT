@@ -1,253 +1,355 @@
-CodeGuard AI
 
-CodeGuard AI is a hybrid AI-assisted secure code review platform that
-combines a deterministic rule-based static security scanner with Google
-Gemini AI-assisted review.
+# 🛡️ CodeGuard AI
+### AI-Assisted Secure Code Review and Vulnerability Detection Platform
+
+CodeGuard AI is a hybrid AI-assisted secure code review platform designed to help developers identify, understand, and fix security vulnerabilities in their source code.
+
+It combines a **deterministic rule-based static security scanner** with **Google Gemini AI** to provide vulnerability detection, contextual explanations, security recommendations, and remediation guidance.
+
+The platform supports individual source files and multi-file ZIP projects, offering persistent security findings, an integrated Monaco code editor, automated verification, security analytics, PDF reports, and secured ZIP generation.
+
+---
+
+## 🚀 Key Features
+
+- **Secure Authentication:** JWT authentication with refresh-token sessions, bcrypt password hashing, and HTTP-only cookies.
+- **Project Management:** Create, manage, and maintain projects with scan history.
+- **Static Code Analysis:** Rule-based scanning to identify potential security vulnerabilities.
+- **AI-Assisted Code Review:** Google Gemini integration for contextual vulnerability explanations and remediation suggestions.
+- **Security Scoring:** Security scores ranging from 0–100.
+- **OWASP & CWE Mapping:** Categorization of security issues using relevant security standards.
+- **Multiple Scan Profiles:** Quick, Balanced, and Deep scanning options.
+- **Integrated Code Editor:** Monaco Editor for viewing and modifying source code.
+- **Secure Remediation:** Guarded fixes with before-and-after verification.
+- **Multi-File ZIP Scanning:** Analyze multiple source files within a single ZIP project.
+- **Persistent Findings:** Store per-file findings, source versions, verification states, and AI reviews.
+- **Security Analytics:** Interactive dashboards and visualizations using Recharts.
+- **PDF Reports:** Generate downloadable security reports.
+- **Secured ZIP Generation:** Reconstruct ZIP projects with verified source changes while preserving the original directory structure.
+- **Dark and Light Themes:** Theme support for a better user experience.
+
+---
+
+## 💻 Supported Programming Languages
+
+- JavaScript
+- TypeScript
+- Python
+- Java
+- C
+- C++
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technologies |
+|---|---|
+| Frontend | React, Vite, JavaScript, JSX |
+| Styling | CSS |
+| Backend | Node.js, Express.js |
+| Database | MongoDB Atlas, Mongoose |
+| Archive Storage | MongoDB GridFS |
+| Authentication | JWT, bcrypt, HTTP-only Cookies |
+| Security Scanner | JavaScript, Regex-based Static Rules |
+| AI Integration | Google Gemini API |
+| Code Editor | Monaco Editor |
+| Analytics | Recharts |
+| Report Generation | jsPDF, html2canvas |
+| API Security | Helmet, CORS, Rate Limiting |
+| Version Control | Git, GitHub |
+
+---
+
+## 🏗️ System Architecture
+
+CodeGuard AI follows a client-server architecture in which the React frontend communicates with the Node.js and Express backend.
+
+The backend coordinates deterministic security scanning, AI-assisted analysis, authentication, and database operations.
+
+```text
+                  CODEGUARD AI
+                       |
+           +-----------+-----------+
+           |                       |
+           v                       v
+      React + Vite UI       Node.js + Express API
+           |                       |
+           |              +--------+--------+
+           |              |                 |
+           |              v                 v
+           |       Static Scanner       Gemini AI
+           |              |                 |
+           |              +--------+--------+
+           |                       |
+           +-----------------------+
+                       |
+                       v
+                MongoDB Atlas
+                       |
+                       v
+                 MongoDB GridFS
+```
+
+---
+
+## 🔍 Security Analysis Workflow
+
+1. **Source Code Input:** Developers upload individual source files or ZIP projects.
+2. **Deterministic Scanning:** The rule-based scanner analyzes source code for potential vulnerabilities.
+3. **Finding Generation:** Security findings are categorized by severity, confidence, OWASP/CWE mapping, and security score.
+4. **AI-Assisted Review:** Google Gemini provides contextual explanations, impact analysis, and remediation guidance.
+5. **Code Editing:** Developers can inspect and modify source code using the integrated Monaco Editor.
+6. **Secure Remediation:** Suggested fixes can be evaluated through the guarded remediation workflow.
+7. **Verification:** The deterministic scanner re-scans modified code to validate improvements.
+8. **Persistence:** Verified source changes and updated findings are stored for future access.
 
-It supports individual source files and multi-file ZIP projects,
-persistent per-file findings, Monaco-based code editing, verification,
-security analytics, reporting, guarded remediation, and secured ZIP
-generation.
+**Note:** The deterministic scanner acts as the primary vulnerability-detection and verification layer. Gemini AI provides additional contextual analysis and developer assistance.
 
-Key Features
+---
 
-JWT authentication with refresh-token sessions
+## 🔐 Guarded Remediation
 
-bcrypt password hashing and HTTP-only cookies
+CodeGuard AI includes a guarded remediation workflow to validate candidate security fixes before saving them.
 
-Project creation, selection, ownership and scan history
+```text
+        Candidate Fix
+              |
+              v
+      Deterministic Re-scan
+              |
+              v
+       Before/After Comparison
+              |
+        +-----+------+
+        |            |
+        v            v
+     Invalid       Valid
+        |            |
+        v            v
+      Reject       Accept
+                     |
+                     v
+               Persist Source
+                     |
+                     v
+              Update Findings
+                     |
+                     v
+               Refresh AI Review
+```
 
-Deterministic rule-based static security scanning
+The system can reject candidate fixes that:
 
-Severity, confidence, OWASP and CWE mapping
+- Increase the number of deterministic findings.
+- Worsen weighted security severity.
+- Reduce the security score.
+- Fail to remove the targeted vulnerability.
+- Provide no meaningful security improvement.
 
-0--100 security scoring
+Manual verification is also available separately.
 
-Quick, Balanced and Deep scan profiles
+---
 
-Google Gemini AI-assisted security review
+## 📦 Multi-File ZIP Project Analysis
 
-Monaco Editor integration
+CodeGuard AI supports security analysis of complete ZIP-based projects.
 
-Deterministic secure-fix workflow
+Key capabilities include:
 
-Guarded remediation with before/after rescanning
+- Safe ZIP archive inspection.
+- ZIP-slip protection.
+- Multi-language source file discovery.
+- Per-file deterministic security scanning.
+- Individual file findings and security scores.
+- Per-file Gemini AI reviews.
+- Persistent source-code storage.
+- Source editing and verification.
+- Original directory hierarchy preservation.
+- Preservation of unsupported files, configuration files, documentation, and other assets.
 
-Multi-language ZIP project scanning
+The platform maintains individual source files with their paths, languages, original and current source versions, findings, scores, verification states, and AI review data.
 
-Persistent per-file ZIP source storage
+### Secured ZIP Generation
 
-Per-file Gemini reviews
+The original uploaded ZIP archive is stored using MongoDB GridFS.
 
-MongoDB GridFS original ZIP storage
+When generating a secured ZIP:
 
-Secured ZIP reconstruction and download
+1. Retrieve the original archive.
+2. Read the original ZIP entries.
+3. Replace supported source files with their latest persisted versions.
+4. Preserve the original project structure and other assets.
+5. Generate the secured ZIP for download.
 
-Recharts security analytics
+This allows developers to obtain an updated project archive without losing unrelated files.
 
-jsPDF/html2canvas reports
+---
 
-Dark/light dashboard themes
+## 📊 Security Analytics and Reporting
 
-Helmet, CORS, rate limiting and request-size protection
+The platform provides a dashboard to help developers understand their project's security status.
 
-Supported Source Languages
+It includes:
 
-CodeGuard currently supports:
+- Overall security scores.
+- Vulnerability severity distribution.
+- Security findings and trends.
+- Project scan history.
+- Interactive visualizations.
+- Downloadable PDF security reports.
 
-JavaScript
+---
 
-TypeScript
+## ⚙️ Installation and Setup
 
-Python
+### Prerequisites
 
-Java
+- Node.js and npm
+- MongoDB Atlas account
+- Google Gemini API key
+- Git
 
-C
+### 1. Clone the Repository
 
-C++
+```bash
+git clone https://github.com/adharvsaneesh-cys/AI-CODE-REVIEW-ASSISTANT.git
 
-Technology Stack
+cd AI-CODE-REVIEW-ASSISTANT
+```
 
-Department              Technologies /          Main Use
-Languages
+### 2. Backend Setup
 
-Frontend                React, JavaScript, JSX  Building the user
-interface
+Navigate to the backend directory:
 
-Styling                 CSS                     Design, responsiveness
-and dark/light theme
+```bash
+cd back-end
+npm install
+```
 
-Backend                 Node.js, Express.js,    APIs and server-side
-JavaScript              processing
+Create a `.env` file inside the `back-end` directory:
 
-Database                MongoDB Atlas, Mongoose Users, projects, scans
-and persisted data
+```env
+NODE_ENV=development
+PORT=8001
 
-Archive Storage         MongoDB GridFS          Original ZIP archive
-storage
+MONGODB_URI=your_mongodb_atlas_connection_string
 
-Authentication          JWT, bcrypt, Cookies    Login, password
-security and sessions
+JWT_ACCESS_SECRET=your_access_token_secret
+JWT_REFRESH_SECRET=your_refresh_token_secret
 
-Security Scanner        JavaScript, Regex /     Deterministic
-Static Rules            vulnerability detection
+FRONTEND_URL=http://localhost:5173
 
-AI Review               Google Gemini API       AI-assisted security
-analysis and
-remediation guidance
+GEMINI_API_KEY=your_google_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+```
 
-Code Editor             Monaco Editor           Viewing, editing and
-fixing source code
-
-Analytics               Recharts                Security scores, charts
-and trends
-
-Reports                 jsPDF, html2canvas      Security report
-generation
-
-API Security            Helmet, CORS, Rate      Protecting backend APIs
-Limiting
-
-Architecture
-
-                       CodeGuard AI
-                            |
-             +--------------+--------------+
-             |                             |
-             v                             v
-      React + Vite UI              Node.js + Express API
-             |                             |
-             |                 +-----------+-----------+
-             |                 |                       |
-             |                 v                       v
-             |        Deterministic Scanner      Gemini AI
-             |                 |                       |
-             |                 +-----------+-----------+
-             |                             |
-             +-----------------------------+
-                            |
-                            v
-                  MongoDB Atlas + Mongoose
-                            |
-                            v
-                     MongoDB GridFS
-
-Security Analysis Workflow
-
-Source Code / ZIP
-        |
-        v
-Deterministic Rule-Based Scan
-        |
-        v
-Findings + Severity + Score
-        |
-        v
-Gemini AI-Assisted Review
-        |
-        v
-Monaco Editor
-        |
-        v
-Edit / Apply Secure Fix
-        |
-        v
-Deterministic Verification
-        |
-        v
-Persist Improved Source
-        |
-        v
-Refresh Findings + AI Review
-
-The deterministic scanner is the primary vulnerability-detection and
-verification layer. Gemini provides contextual explanations, impact
-analysis, remediation guidance and secure coding assistance.
-
-Guarded Remediation
-
-Automated fixes are validated before persistence.
-
-Candidate Fix
-     |
-     v
-Deterministic Re-scan
-     |
-     v
-Compare Before / After
-     |
-     +---- Regression / target remains ---> REJECT
-     |
-     +---- Valid improvement -------------> ACCEPT
-                                                |
-                                                v
-                                         Persist source
-                                                |
-                                                v
-                                         Replace findings
-                                                |
-                                                v
-                                         Refresh AI review
-
-Guarded remediation can reject candidates that increase deterministic
-findings, worsen weighted severity, reduce the security score, fail to
-remove the targeted vulnerability, or provide no meaningful improvement.
-
-Manual verification remains available separately.
-
-ZIP Project Analysis
-
-ZIP scanning supports:
-
-Safe archive inspection
-
-ZIP-slip protection
-
-Multi-language source discovery
-
-Per-file deterministic scanning
-
-Per-file issue counts and security scores
-
-Per-file Gemini reviews
-
-Persistent source storage
-
-Source editing and verification
-
-Original directory hierarchy preservation
-
-Unsupported file and asset preservation
-
-Supported source files are persisted individually with original/current
-source, path, language, findings, score, verification state and AI
-review data.
-
-Secured ZIP Generation
-
-The original uploaded ZIP is retained using MongoDB GridFS.
-
-Original ZIP from GridFS
-        |
-        v
-Read Original Entries
-        |
-        v
-Replace Supported Source Entries
-with Latest Persisted Source
-        |
-        v
-Preserve Assets / Config / Docs
-        |
-        v
-Generate Secured ZIP
-
-This preserves the original project structure and non-source assets.
-
-Project Structure
-
-AI-Code-Review-Assistant/
+Start the backend server:
+
+```bash
+npm run dev
+```
+
+Backend URL:
+
+```text
+http://127.0.0.1:8001
+```
+
+Health Check:
+
+```text
+http://127.0.0.1:8001/health
+```
+
+### 3. Frontend Setup
+
+Open another terminal and navigate to the frontend directory:
+
+```bash
+cd front-end
+npm install
+```
+
+Start the frontend development server:
+
+```bash
+npm run dev
+```
+
+Frontend URL:
+
+```text
+http://localhost:5173
+```
+
+### 4. Production Build
+
+To generate the frontend production build:
+
+```bash
+cd front-end
+npm run build
+```
+
+Vite generates the production build inside the `dist/` directory.
+
+For detailed deployment instructions, refer to [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+---
+
+## 🔗 API Overview
+
+The backend API uses the following base prefix:
+
+```text
+/api/v1
+```
+
+Major API areas include:
+
+- Authentication
+- Project management
+- Source-code scanning
+- ZIP project scanning
+- ZIP project file management
+- Per-file AI reviews
+- Security verification
+- Secured ZIP downloads
+- Scan history
+
+Protected resources enforce authenticated project ownership where applicable.
+
+---
+
+## 🛡️ Security Measures
+
+Security is an important part of CodeGuard AI itself.
+
+The platform incorporates:
+
+- JWT authentication.
+- bcrypt password hashing.
+- HTTP-only refresh cookies.
+- Helmet security headers.
+- Restricted CORS configuration.
+- Rate limiting.
+- Request-size protection.
+- Authentication middleware.
+- Project and file ownership validation.
+- Input validation.
+- Production-safe error handling.
+- ZIP archive limits and safe path validation.
+- ZIP-slip protection.
+- Source-code size and line limits.
+
+---
+
+## 📁 Project Structure
+
+```text
+AI-CODE-REVIEW-ASSISTANT/
+│
 ├── back-end/
 │   ├── Src/
 │   │   ├── config/
@@ -257,9 +359,11 @@ AI-Code-Review-Assistant/
 │   │   ├── routes/
 │   │   ├── services/
 │   │   └── utils/
+│   │
 │   ├── server.js
 │   ├── package.json
 │   └── .env
+│
 ├── front-end/
 │   ├── src/
 │   │   ├── components/
@@ -269,248 +373,93 @@ AI-Code-Review-Assistant/
 │   │   ├── routes/
 │   │   ├── services/
 │   │   └── styles/
+│   │
 │   ├── public/
 │   ├── package.json
 │   └── vite.config.js
+│
 ├── README.md
 └── DEPLOYMENT.md
-
-Installation
-
-Clone the repository:
-
-git clone <your-repository-url>
-cd AI-Code-Review-Assistant
-
-Backend
-
-cd back-end
-npm install
-
-Create .env:
-
-NODE_ENV=development
-PORT=8001
-MONGODB_URI=your_mongodb_atlas_connection_string
-JWT_ACCESS_SECRET=replace_with_a_long_random_secret
-JWT_REFRESH_SECRET=replace_with_a_different_long_random_secret
-FRONTEND_URL=http://localhost:5173
-GEMINI_API_KEY=your_google_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
-
-Never commit .env.
-
-Start:
-
-npm run dev
-
-Local backend:
-
-http://127.0.0.1:8001
-
-Health endpoint:
-
-http://127.0.0.1:8001/health
-
-Frontend
-
-cd front-end
-npm install
-npm run dev
-
-Local frontend:
-
-http://localhost:5173
-
-Production Build
-
-cd front-end
-npm run build
-
-Vite generates the production build in dist/.
-
-For complete deployment instructions, see DEPLOYMENT.md.
-
-API
-
-The backend API prefix is:
-
-/api/v1
-
-Major API areas include authentication, projects, source scans, ZIP
-scans, ZIP project files, per-file AI review, verification, secured ZIP
-download and scan history.
-
-Protected resources enforce authenticated ownership where applicable.
-
-Security Controls
-
-CodeGuard includes:
-
-JWT authentication
-
-bcrypt password hashing
-
-HTTP-only refresh cookies
-
-Helmet
-
-Restricted CORS
-
-Rate limiting
-
-Request-size protection
-
-Authentication middleware
-
-Ownership validation
-
-Input validation
-
-Production-safe error handling
-
-Disabled X-Powered-By
-
-Source size/line limits
-
-ZIP archive limits
-
-Safe ZIP paths
-
-ZIP-slip protection
-
-Scan Profiles
-
-Quick uses a smaller high-value rule set for faster analysis.
-
-Balanced provides a balance between coverage and performance.
-
-Deep uses the broadest deterministic rule set for more comprehensive
-analysis.
-
-Minimum severity and AI-review settings can also be configured.
-
-Database
-
-MongoDB Atlas stores users, projects, scans, findings, scores, ZIP
-project-file metadata, persisted source versions, AI reviews and
-verification state.
-
-Mongoose provides schemas and database access.
-
-MongoDB GridFS stores original ZIP archives required for secured-project
-reconstruction.
-
-Testing Checklist
-
-AUTHENTICATION
-[ ] Register
-[ ] Login
-[ ] Token refresh
-[ ] Logout
-[ ] Protected routes
-
-PROJECTS
-[ ] Create/select/delete project
-[ ] Ownership enforcement
-[ ] Project scan history
-
-SCANNING
-[ ] Paste-code scan
-[ ] Source-file scan
-[ ] Findings
-[ ] Security score
-[ ] OWASP/CWE
-[ ] Gemini review
-
-ZIP PROJECTS
-[ ] ZIP upload
-[ ] Supported languages
-[ ] Per-file findings
-[ ] Per-file Gemini
-[ ] File switching
-[ ] Source persistence
-[ ] Reopen ZIP scan
-
-REMEDIATION
-[ ] Apply Secure Fix
-[ ] Deterministic verification
-[ ] Improved fix accepted
-[ ] Regression rejected
-[ ] Findings/score updated
-[ ] Gemini refreshed
-
-SECURED ZIP
-[ ] Download secured ZIP
-[ ] Folder hierarchy preserved
-[ ] Verified source included
-[ ] Config/docs/assets preserved
-
-REPORTING
-[ ] Analytics
-[ ] Trends
-[ ] PDF report
-[ ] Dark/light theme
-
-Production Security
-
-Never commit .env.
-
-Never expose Gemini or MongoDB credentials to frontend code.
-
-Use strong and different JWT secrets.
-
-Use HTTPS in production.
-
-Restrict CORS.
-
-Keep Helmet and rate limiting enabled.
-
-Keep request/upload limits enabled.
-
-Enforce project, scan and file ownership.
-
-Treat Gemini output as advisory.
-
-Deterministically verify automated remediation.
-
-Protect MongoDB Atlas and GridFS.
-
-Never log passwords, tokens, secrets, cookies or private source
-code.
-
-Authors
-
-Adharv S Aneesh
-
-Dhammadeep M Ganvir
-
-Utkarsh S Shamkuwar
-
-Harsha Bhoge
-
-Sakshi Kubade
-
-Project Information
-
-Project Name: CodeGuard AI
-Project Type: AI-Assisted Secure Code Review Platform
-Primary Security Engine: Deterministic Rule-Based Static Scanner
-AI Layer: Google Gemini API
-Frontend: React + Vite
-Backend: Node.js + Express.js
-Database: MongoDB Atlas + Mongoose
-Archive Storage: MongoDB GridFS
-Authentication: JWT + bcrypt + HTTP-only cookies
-Code Editor: Monaco Editor
-Analytics: Recharts
-Reports: jsPDF + html2canvas
-
-Disclaimer
-
-CodeGuard AI is a security-analysis and developer-assistance platform.
-Static-analysis rules and AI-generated guidance can produce false
-positives, false negatives or incomplete remediation. Security-sensitive
-software should also undergo appropriate testing, dependency analysis,
-manual review and professional security assessment before production
-deployment.
+```
+
+---
+
+## 🧪 Testing Checklist
+
+The following areas are included in the project's testing checklist.
+
+- [ ] User registration and login
+- [ ] Token refresh and logout
+- [ ] Protected routes
+- [ ] Project creation and management
+- [ ] Project ownership enforcement
+- [ ] Source-code scanning
+- [ ] Security findings and scoring
+- [ ] OWASP/CWE mapping
+- [ ] Gemini AI review
+- [ ] ZIP upload and scanning
+- [ ] Per-file findings and AI reviews
+- [ ] Source-code persistence
+- [ ] Secure fix application
+- [ ] Deterministic verification
+- [ ] Regression rejection
+- [ ] Secured ZIP generation
+- [ ] PDF report generation
+- [ ] Security analytics
+- [ ] Dark and light themes
+
+---
+
+## 🔒 Production Security Recommendations
+
+- Never commit `.env` files or expose API credentials.
+- Never expose Gemini or MongoDB credentials in frontend code.
+- Use strong and separate JWT secrets.
+- Use HTTPS in production.
+- Restrict CORS to trusted origins.
+- Keep Helmet and rate limiting enabled.
+- Enforce request and upload limits.
+- Validate project, scan, and file ownership.
+- Treat AI-generated output as advisory.
+- Deterministically verify automated remediation.
+- Protect MongoDB Atlas and GridFS credentials.
+- Never log passwords, tokens, secrets, cookies, or private source code.
+
+---
+
+## 👨‍💻 Project Contributors
+
+This project was developed collaboratively by:
+
+1. Adharv S Aneesh
+2. Dhammadeep M Ganvir
+3. Utkarsh S Shamkuwar
+4. Harsha Bhoge
+5. Sakshi Kubade
+
+---
+
+## 📌 Project Information
+
+| Detail | Description |
+|---|---|
+| Project Name | CodeGuard AI |
+| Project Type | AI-Assisted Secure Code Review Platform |
+| Primary Security Engine | Deterministic Rule-Based Static Scanner |
+| AI Integration | Google Gemini API |
+| Frontend | React + Vite |
+| Backend | Node.js + Express.js |
+| Database | MongoDB Atlas + Mongoose |
+| Archive Storage | MongoDB GridFS |
+| Authentication | JWT + bcrypt |
+| Code Editor | Monaco Editor |
+| Analytics | Recharts |
+| Reporting | jsPDF + html2canvas |
+
+---
+
+## ⚠️ Disclaimer
+
+CodeGuard AI is a security-analysis and developer-assistance platform. Static-analysis rules and AI-generated guidance may produce false positives, false negatives, or incomplete remediation suggestions.
+
+The platform should be used as an additional security-review tool and does not replace comprehensive security testing, dependency analysis, manual code review, or professional security assessment before production deployment.
