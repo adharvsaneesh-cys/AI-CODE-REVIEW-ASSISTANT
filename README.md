@@ -223,7 +223,7 @@ cd AI-CODE-REVIEW-ASSISTANT
 Navigate to the backend directory:
 
 ```bash
-cd back-end
+cd BACK-END
 npm install
 ```
 
